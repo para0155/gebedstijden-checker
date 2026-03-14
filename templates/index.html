@@ -331,12 +331,6 @@
 const CFG={{config|tojson}};
 let _rh=null;
 const isDesktop=()=>window.innerWidth>768;
-const CORS_PROXY='https://corsproxy.io/?';
-async function mawaqitFetch(url){
-    const resp=await fetch(CORS_PROXY+encodeURIComponent(url));
-    if(!resp.ok)throw new Error('Mawaqit niet bereikbaar');
-    return resp.json();
-}
 
 document.addEventListener('DOMContentLoaded',()=>{
     CFG?laadTijden():toonZoek();
@@ -353,18 +347,8 @@ function hide(...ids){ids.forEach(id=>document.getElementById(id).style.display=
 async function zoek(){
     const q=document.getElementById('si').value.trim();if(!q)return;
     let r;
-    try{
-        // Probeer eerst via server (lokaal)
-        const resp=await fetch(`/api/zoek?q=${encodeURIComponent(q)}`);
-        r=await resp.json();
-        if(r.error)throw new Error(r.error);
-    }catch(e){
-        // Fallback: via CORS proxy naar Mawaqit
-        try{
-            const raw=await mawaqitFetch(`https://mawaqit.net/api/2.0/mosque/search?word=${encodeURIComponent(q)}`);
-            r=raw.map(m=>({naam:m.name||'Onbekend',adres:m.localisation||'',uuid:m.uuid||'',slug:m.slug||'',lat:m.latitude||0,lon:m.longitude||0}));
-        }catch(e2){r=[];}
-    }
+    const resp=await fetch(`/api/zoek?q=${encodeURIComponent(q)}`);
+    r=await resp.json();
     const c=document.getElementById('res');
     if(!r.length){c.innerHTML='<div style="padding:10px;color:var(--dim)">Geen resultaten</div>';return}
     c.innerHTML=r.map(m=>`<div class="res-item" onclick='kies(${JSON.stringify(m)})'><div class="ri-n">${m.naam}</div><div class="ri-a">${m.adres}</div></div>`).join('');
@@ -377,28 +361,7 @@ async function kies(m){
 
 async function laadTijden(){
     show('ld');hide('tc','zc','hc-sidebar','hc-main','st','zst-card');
-    let data;
-    try{
-        // Probeer eerst de oude route (werkt lokaal)
-        const resp=await fetch('/api/tijden');
-        data=await resp.json();
-        if(data.error && data.error.includes('Mawaqit'))throw new Error(data.error);
-    }catch(e){
-        // Fallback: haal Mawaqit tijden vanuit browser
-        try{
-            const cfg=CFG||await(await fetch('/api/tijden')).json();
-            const slug=cfg.slug||'';
-            const mData=await mawaqitFetch(`https://mawaqit.net/api/2.0/mosque/search?word=${encodeURIComponent(slug)}`);
-            if(!mData.length){hide('ld');alert('Moskee niet gevonden');toonZoek();return}
-            const m=mData[0];
-            const times=m.times||[];
-            const moskee_tijden={fajr:times[0],shurooq:times[1],dhuhr:times[2],asr:times[3],maghrib:times[4],isha:times[5]};
-            const bResp=await fetch('/api/berekenen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({moskee_tijden})});
-            data=await bResp.json();
-        }catch(e2){
-            hide('ld');alert('Fout bij laden: '+e2.message);toonZoek();return;
-        }
-    }
+    const data=await(await fetch('/api/tijden')).json();
     hide('ld');
     if(data.error){alert(data.error);toonZoek();return}
 
