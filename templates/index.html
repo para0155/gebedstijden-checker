@@ -25,57 +25,91 @@
             --chart-bg: #080c16;
         }
         [data-theme="light"]{
-            --bg: #f5f0e8;
-            --surface: #fffdf7;
-            --surface2: #efe9dd;
-            --border: rgba(120,90,50,0.1);
-            --text: #2c2416;
-            --dim: #8a7d6b;
-            --accent: #1a6fb5;
-            --gold: #b8860b;
-            --green: #1a7a4c;
-            --orange: #c85a17;
-            --red: #b83232;
-            --chart-bg: #e8e0d0;
+            --bg: #f2f4f8;
+            --surface: #ffffff;
+            --surface2: #f7f8fa;
+            --border: rgba(0,0,0,0.06);
+            --text: #1c1c1e;
+            --dim: #8e8e93;
+            --accent: #007aff;
+            --gold: #ff9500;
+            --green: #30d158;
+            --orange: #ff9500;
+            --red: #ff3b30;
+            --chart-bg: #ffffff;
         }
-        [data-theme="light"] body{
-            background:linear-gradient(180deg,#f5f0e8 0%,#ede5d8 100%);
-        }
+        [data-theme="light"] body{background:#f2f4f8}
         [data-theme="light"] .card{
-            box-shadow:0 1px 4px rgba(100,80,50,0.08);
+            box-shadow:0 0.5px 1px rgba(0,0,0,0.05),0 2px 8px rgba(0,0,0,0.04);
+            border-color:transparent;
         }
         [data-theme="light"] .sidebar{
-            background:#fffdf7;
-            border-right-color:rgba(120,90,50,0.1);
+            background:#ffffff;border-right-color:rgba(0,0,0,0.06);
         }
         [data-theme="light"] .pill.ok{
-            background:rgba(26,122,76,0.08);color:#1a7a4c;
-            border-color:rgba(26,122,76,0.18);
+            background:rgba(48,209,88,0.1);color:#248a3d;
+            border-color:rgba(48,209,88,0.2);
         }
         [data-theme="light"] .pill.warn{
-            background:rgba(200,90,23,0.08);color:#c85a17;
-            border-color:rgba(200,90,23,0.18);
+            background:rgba(255,149,0,0.1);color:#c93400;
+            border-color:rgba(255,149,0,0.2);
         }
-        [data-theme="light"] .g-badge.ok{background:rgba(26,122,76,0.1);color:#1a7a4c}
-        [data-theme="light"] .g-badge.warning{background:rgba(200,90,23,0.1);color:#c85a17}
-        [data-theme="light"] .g-badge.error{background:rgba(184,50,50,0.1);color:#b83232}
+        [data-theme="light"] .g-badge.ok{background:rgba(48,209,88,0.12);color:#248a3d}
+        [data-theme="light"] .g-badge.warning{background:rgba(255,149,0,0.12);color:#c93400}
+        [data-theme="light"] .g-badge.error{background:rgba(255,59,48,0.12);color:#d70015}
+        [data-theme="light"] .g-dot.ok{background:#30d158}
+        [data-theme="light"] .g-dot.warning{background:#ff9500}
+        [data-theme="light"] .g-dot.error{background:#ff3b30}
         [data-theme="light"] .ramadan-card{
-            background:linear-gradient(135deg,rgba(26,122,76,0.06),rgba(184,134,11,0.08));
-            border-color:rgba(184,134,11,0.2);
+            background:linear-gradient(135deg,rgba(48,209,88,0.06),rgba(255,149,0,0.08));
+            border-color:rgba(255,149,0,0.15);
         }
+        [data-theme="light"] .ramadan-time{background:rgba(0,0,0,0.03)}
         [data-theme="light"] .search-row input{
-            background:#fffdf7;color:#2c2416;border-color:rgba(120,90,50,0.15);
+            background:#ffffff;color:#1c1c1e;border-color:rgba(0,0,0,0.1);
         }
-        [data-theme="light"] .res-item{background:#fffdf7}
-        [data-theme="light"] .fav-item{background:#fffdf7}
-        [data-theme="light"] .zs-item{background:#fffdf7}
+        [data-theme="light"] .search-row input:focus{
+            border-color:#007aff;box-shadow:0 0 0 3px rgba(0,122,255,0.12);
+        }
+        [data-theme="light"] .res-item{background:#ffffff}
+        [data-theme="light"] .res-item:hover{background:#f7f8fa;border-color:#007aff}
+        [data-theme="light"] .fav-item{background:#ffffff}
+        [data-theme="light"] .zs-item{background:#ffffff}
         [data-theme="light"] .compass-ring{
-            background:radial-gradient(circle,#fffdf7 0%,#efe9dd 100%);
-            border-color:rgba(120,90,50,0.15);
+            background:radial-gradient(circle,#ffffff 0%,#f2f4f8 100%);
+            border-color:rgba(0,0,0,0.1);
         }
+        [data-theme="light"] .compass-dir{color:#8e8e93}
+        [data-theme="light"] .compass-dir.n{color:#ff3b30}
         [data-theme="light"] .theme-toggle{
-            background:#fffdf7;box-shadow:0 2px 8px rgba(100,80,50,0.12);
+            background:#ffffff;box-shadow:0 1px 6px rgba(0,0,0,0.1);
         }
+        [data-theme="light"] .moskee-top h2{color:#007aff}
+        [data-theme="light"] .hijri{color:#ff9500}
+        [data-theme="light"] .oz-row.next{
+            background:rgba(48,209,88,0.06);border-color:rgba(48,209,88,0.2);
+        }
+        [data-theme="light"] .oz-row.next .oz-naam{color:#248a3d}
+        [data-theme="light"] .oz-row.next .oz-tijd{color:#248a3d}
+        [data-theme="light"] .g-row.next{background:rgba(48,209,88,0.06)}
+        [data-theme="light"] .g-row.next .g-name{color:#248a3d}
+        [data-theme="light"] .view-tab{background:#ffffff;border-color:rgba(0,0,0,0.08)}
+        [data-theme="light"] .view-tab.active{
+            background:rgba(0,122,255,0.08);color:#007aff;border-color:rgba(0,122,255,0.2);
+        }
+        [data-theme="light"] .btn-sm{border-color:rgba(0,0,0,0.1);color:#007aff}
+        [data-theme="light"] .btn-gps-full{background:#ffffff;border-color:rgba(0,0,0,0.08)}
+        [data-theme="light"] .btn-gps-full:hover{border-color:#007aff;color:#007aff}
+        [data-theme="light"] .btn-terug{border-color:rgba(0,0,0,0.1);color:#8e8e93}
+        [data-theme="light"] .btn-terug:hover{color:#007aff;border-color:#007aff}
+        [data-theme="light"] .week-table th,
+        [data-theme="light"] .maand-table th{background:#ffffff}
+        [data-theme="light"] .week-table tr.today,
+        [data-theme="light"] .maand-table tr.today{background:rgba(0,122,255,0.04)}
+        [data-theme="light"] .qibla-deg{color:#248a3d}
+        [data-theme="light"] .notif-settings{border-top-color:rgba(0,0,0,0.06)}
+        [data-theme="light"] .vgl-table th{border-bottom-color:rgba(0,0,0,0.06)}
+        [data-theme="light"] .vgl-table td{border-bottom-color:rgba(0,0,0,0.04)}
         *{margin:0;padding:0;box-sizing:border-box}
         body{
             font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
@@ -1537,7 +1571,7 @@ function tekenGrafiek(pad,gebeden,verg){
     // Zones
     const isLight=document.documentElement.getAttribute('data-theme')==='light';
     const zones=isLight?
-        [[bot,-18,'#c8bfb0'],[-18,-12,'#d4ccbc'],[-12,-6,'#ddd5c5'],[-6,0,'#e8e0d0'],[0,top,'#f0e8d8']]:
+        [[bot,-18,'#dde3ed'],[-18,-12,'#e3e8f2'],[-12,-6,'#e9eef6'],[-6,0,'#eff3fa'],[0,top,'#f5f8ff']]:
         [[bot,-18,'#060a14'],[-18,-12,'#0b1225'],[-12,-6,'#111c3a'],[-6,0,'#182952'],[0,top,'#14203c']];
     zones.forEach(([a,b,col])=>{
         c.fillStyle=col;c.fillRect(mL,yP(b),gW,yP(a)-yP(b));
@@ -1572,10 +1606,10 @@ function tekenGrafiek(pad,gebeden,verg){
         const p={x:xP(i-1),y:yP(pad[i-1].hoogte)},n={x:xP(i),y:yP(pad[i].hoogte)},mx=(p.x+n.x)/2;
         c.bezierCurveTo(mx,p.y,mx,n.y,n.x,n.y);
     }
-    const curveColor=isLight?'#b8860b':'#f5c842';
-    const curveGlow=isLight?'rgba(184,134,11,.2)':'rgba(245,200,66,.3)';
+    const curveColor=isLight?'#ff9500':'#f5c842';
+    const curveGlow=isLight?'rgba(255,149,0,.15)':'rgba(245,200,66,.3)';
     c.save();c.shadowColor=curveGlow;c.shadowBlur=10;c.strokeStyle=curveColor;c.lineWidth=mob?2:2.5;c.stroke();c.restore();
-    c.strokeStyle=isLight?'#c99a0e':'#ffd54f';c.lineWidth=mob?1.8:2;c.stroke();
+    c.strokeStyle=isLight?'#ffb340':'#ffd54f';c.lineWidth=mob?1.8:2;c.stroke();
 
     // Markers
     const gk={
