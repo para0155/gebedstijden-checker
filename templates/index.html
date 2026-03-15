@@ -367,7 +367,7 @@ async function kies(m){
 }
 
 async function laadTijden(){
-    show('ld');hide('tc','zc','hc-sidebar','hc-main','st','zst-card');
+    show('ld');hide('tc','zc','oz-sidebar','oz-main','st','zst-card');
     const data=await(await fetch('/api/tijden')).json();
     hide('ld');
     if(data.error){alert(data.error);toonZoek();return}
