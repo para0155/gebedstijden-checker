@@ -185,6 +185,23 @@
         .oz-hoek.pos{background:rgba(245,200,66,0.1);color:var(--gold)}
         .oz-hoek.neg{background:rgba(74,158,255,0.1);color:var(--accent)}
         .oz-hoek.nul{background:rgba(255,152,0,0.1);color:var(--orange)}
+        .oz-row.next{
+            background:rgba(52,211,153,0.06);
+            border:1px solid rgba(52,211,153,0.2);
+            border-radius:10px;
+            margin:-2px -8px;padding:12px 8px;
+        }
+        .oz-row.next .oz-naam{color:var(--green)}
+        .oz-row.next .oz-tijd{color:var(--green)}
+        .oz-next-label{
+            font-size:9px;font-weight:700;color:var(--green);
+            text-transform:uppercase;letter-spacing:.5px;margin-top:2px;
+        }
+        .g-row.next{
+            background:rgba(52,211,153,0.06);
+            border-radius:8px;margin:0 -8px;padding:11px 8px;
+        }
+        .g-row.next .g-name{color:var(--green)}
 
         /* ── Zonnestanden timeline ── */
         .tl-section{margin-top:14px}
@@ -382,17 +399,29 @@ async function laadTijden(){
     if(!w.length){se.className='pill ok';se.textContent='Alle tijden kloppen'}
     else{se.className='pill warn';se.innerHTML=`<div>${w.length} afwijking${w.length>1?'en':''}</div>`+w.map(x=>`<div class="w-i">${x.icoon} ${x.naam}: ${Math.abs(x.verschil)} min</div>`).join('')}
 
+    // Bepaal aankomend gebed
+    const nu=new Date();
+    const nuMin=nu.getHours()*60+nu.getMinutes();
+    let volgend=null;
+    for(const v of data.vergelijking){
+        if(v.moskee==='—')continue;
+        const[h,m]=v.moskee.split(':').map(Number);
+        if(h*60+m>nuMin){volgend=v.naam;break}
+    }
+
     // Tijden
     show('tc');
-    document.getElementById('tl').innerHTML=data.vergelijking.map(v=>`
-        <div class="g-row">
+    document.getElementById('tl').innerHTML=data.vergelijking.map(v=>{
+        const isNext=v.naam===volgend;
+        return `<div class="g-row${isNext?' next':''}">
             <div class="gl"><span class="g-dot ${v.status}"></span><span class="g-name">${v.naam}</span></div>
             <div class="gr">
                 <div class="g-col"><div class="gc-l">Moskee</div><div class="gc-v">${v.moskee}</div></div>
                 <div class="g-col"><div class="gc-l">Berekend</div><div class="gc-v">${v.berekend}</div></div>
                 <div class="g-badge ${v.status}">${v.verschil>0?'+':''}${v.verschil}</div>
             </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 
     // Zon
     const z=data.zonnestand;show('zc');
@@ -409,12 +438,25 @@ async function laadTijden(){
         const cls=h.hoek===null?'nul':h.hoek>0?'pos':h.hoek<0?'neg':'nul';
         const val=h.hoek!==null?(h.hoek>0?'+':'')+h.hoek+'°':'—';
         const tijden=vMap[h.naam]||{};
-        const tijd=tijden.berekend||h.tijd||'—';
-        return `<div class="oz-row">
+        const tijd=tijden.moskee||tijden.berekend||h.tijd||'—';
+        const isNext=h.naam===volgend;
+        // Bereken resterende tijd
+        let restLabel='';
+        if(isNext&&tijd!=='—'){
+            const[th,tm]=tijd.split(':').map(Number);
+            let diff=th*60+tm-nuMin;
+            if(diff>0){
+                const uur=Math.floor(diff/60);
+                const min=diff%60;
+                restLabel=uur>0?`Over ${uur}u ${min}m`:`Over ${min} min`;
+            }
+        }
+        return `<div class="oz-row${isNext?' next':''}">
             <div class="oz-icon">${h.icoon}</div>
             <div class="oz-info">
                 <div class="oz-naam">${h.naam}</div>
                 <div class="oz-zon">${h.uitleg}</div>
+                ${isNext?`<div class="oz-next-label">${restLabel}</div>`:''}
             </div>
             <div class="oz-right">
                 <div class="oz-tijd">${tijd}</div>
