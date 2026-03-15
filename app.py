@@ -667,5 +667,80 @@ def api_week():
     return jsonify({"dagen": dagen, "methode": methode})
 
 
+@app.route("/api/maand")
+def api_maand():
+    """Geeft gebedstijden voor de huidige maand (berekend)."""
+    config = laad_config()
+    if not config:
+        return jsonify({"error": "Geen moskee geselecteerd"}), 400
+
+    tz_str = config.get("tijdzone", "Europe/Amsterdam")
+    tz = ZoneInfo(tz_str)
+    vandaag = datetime.now(tz).date()
+    methode = config.get("methode", "MWL")
+
+    dag_namen = {
+        "Monday": "Ma", "Tuesday": "Di", "Wednesday": "Wo",
+        "Thursday": "Do", "Friday": "Vr", "Saturday": "Za",
+        "Sunday": "Zo",
+    }
+
+    maand_namen = {
+        1: "Januari", 2: "Februari", 3: "Maart", 4: "April",
+        5: "Mei", 6: "Juni", 7: "Juli", 8: "Augustus",
+        9: "September", 10: "Oktober", 11: "November", 12: "December",
+    }
+
+    # Eerste en laatste dag van de maand
+    eerste = vandaag.replace(day=1)
+    if eerste.month == 12:
+        laatste = eerste.replace(year=eerste.year + 1, month=1) - timedelta(days=1)
+    else:
+        laatste = eerste.replace(month=eerste.month + 1) - timedelta(days=1)
+
+    dagen = []
+    for i in range((laatste - eerste).days + 1):
+        datum = eerste + timedelta(days=i)
+        tijden = bereken_gebedstijden(
+            config["latitude"], config["longitude"], datum, tz_str, methode
+        )
+        eng_dag = datum.strftime("%A")
+        nl_dag = dag_namen.get(eng_dag, eng_dag)
+        dagen.append({
+            "datum": datum.strftime("%d-%m"),
+            "dag": nl_dag,
+            "dag_nr": datum.day,
+            "is_vandaag": (datum == vandaag),
+            "tijden": tijden,
+        })
+
+    return jsonify({
+        "dagen": dagen,
+        "methode": methode,
+        "maand": maand_namen.get(vandaag.month, ""),
+        "jaar": vandaag.year,
+    })
+
+
+@app.route("/api/favorieten", methods=["GET"])
+def api_favorieten_get():
+    """Haal opgeslagen favoriete moskeeën op."""
+    fav_bestand = Path(__file__).parent / "favorieten.json"
+    if fav_bestand.exists():
+        with open(fav_bestand) as f:
+            return jsonify(json.load(f))
+    return jsonify([])
+
+
+@app.route("/api/favorieten", methods=["POST"])
+def api_favorieten_post():
+    """Sla favoriete moskeeën op."""
+    fav_bestand = Path(__file__).parent / "favorieten.json"
+    data = request.json
+    with open(fav_bestand, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    return jsonify({"ok": True})
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5050, host="0.0.0.0")

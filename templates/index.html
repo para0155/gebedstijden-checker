@@ -22,6 +22,21 @@
             --orange: #fb923c;
             --red: #f87171;
             --r: 14px;
+            --chart-bg: #080c16;
+        }
+        [data-theme="light"]{
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --surface2: #e8ecf0;
+            --border: rgba(0,0,0,0.08);
+            --text: #1a1a2e;
+            --dim: #6b7b94;
+            --accent: #2563eb;
+            --gold: #d97706;
+            --green: #059669;
+            --orange: #ea580c;
+            --red: #dc2626;
+            --chart-bg: #e8ecf0;
         }
         *{margin:0;padding:0;box-sizing:border-box}
         body{
@@ -277,7 +292,7 @@
         }
 
         /* ── Canvas ── */
-        .chart-wrap{margin-top:12px;border-radius:12px;overflow:hidden;background:#080c16}
+        .chart-wrap{margin-top:12px;border-radius:12px;overflow:hidden;background:var(--chart-bg)}
         canvas#chart{width:100%;display:block}
 
         /* ── Loading ── */
@@ -490,9 +505,96 @@
             font-size:12px;color:var(--dim);
         }
         .notif-status{font-size:10px;margin-top:2px}
+
+        /* ═══════════════════════════════════════
+           FEATURE 7: Theme Toggle
+           ═══════════════════════════════════════ */
+        .theme-toggle{
+            position:fixed;top:12px;right:12px;z-index:100;
+            width:36px;height:36px;border-radius:50%;border:1px solid var(--border);
+            background:var(--surface);color:var(--text);font-size:16px;
+            cursor:pointer;display:flex;align-items:center;justify-content:center;
+            box-shadow:0 2px 8px rgba(0,0,0,0.2);transition:all .2s;
+        }
+        .theme-toggle:hover{border-color:var(--accent);transform:scale(1.1)}
+        @media(min-width:769px){.theme-toggle{top:16px;right:16px}}
+
+        /* ═══════════════════════════════════════
+           FEATURE 8: Favorieten
+           ═══════════════════════════════════════ */
+        .fav-list{margin-top:12px}
+        .fav-item{
+            display:flex;align-items:center;gap:8px;
+            padding:10px;border-radius:10px;background:var(--bg);
+            margin-bottom:6px;cursor:pointer;border:1px solid transparent;
+            transition:all .15s;
+        }
+        .fav-item:hover{border-color:var(--accent);background:var(--surface2)}
+        .fav-item .fav-name{flex:1;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .fav-item .fav-addr{font-size:10px;color:var(--dim)}
+        .fav-star{color:var(--gold);font-size:16px;flex-shrink:0;cursor:pointer}
+        .fav-remove{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;opacity:.5;flex-shrink:0}
+        .fav-remove:hover{opacity:1}
+        .btn-fav{
+            padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;
+            white-space:nowrap;flex-shrink:0;border:1px solid var(--border);
+            background:none;color:var(--gold);
+        }
+        .btn-fav:hover{border-color:var(--gold)}
+        .btn-fav.saved{color:var(--green);border-color:var(--green)}
+
+        /* ═══════════════════════════════════════
+           FEATURE 9: Deel knop
+           ═══════════════════════════════════════ */
+        .btn-share{
+            padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;
+            white-space:nowrap;flex-shrink:0;border:1px solid var(--border);
+            background:none;color:var(--accent);
+        }
+        .btn-share:hover{border-color:var(--accent)}
+
+        /* ═══════════════════════════════════════
+           FEATURE 10: Maandoverzicht
+           ═══════════════════════════════════════ */
+        .maand-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-height:60vh;overflow-y:auto}
+        .maand-table{width:100%;border-collapse:collapse;font-size:11px;min-width:420px}
+        .maand-table th{
+            font-size:9px;color:var(--dim);text-transform:uppercase;
+            letter-spacing:.5px;padding:6px 4px;text-align:center;
+            border-bottom:1px solid var(--border);font-weight:600;
+            position:sticky;top:0;background:var(--surface);z-index:1;
+        }
+        .maand-table td{
+            padding:5px 4px;text-align:center;
+            border-bottom:1px solid var(--border);
+            font-variant-numeric:tabular-nums;font-weight:600;font-size:11px;
+        }
+        .maand-table tr:last-child td{border-bottom:none}
+        .maand-table tr.today{background:rgba(52,211,153,0.06)}
+        .maand-table tr.today td:first-child{color:var(--green);font-weight:700}
+
+        /* ═══════════════════════════════════════
+           FEATURE 11: Suhoor/Iftar timer (groot)
+           ═══════════════════════════════════════ */
+        .ramadan-timer-big{
+            font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;
+            letter-spacing:1px;
+        }
+        .ramadan-timer-big.suhoor{color:var(--accent)}
+        .ramadan-timer-big.iftar{color:var(--gold)}
+
+        /* ═══════════════════════════════════════
+           FEATURE 12: Verschil indicator
+           ═══════════════════════════════════════ */
+        .diff-pos{color:var(--red)}
+        .diff-neg{color:var(--green)}
+        .diff-zero{color:var(--dim)}
     </style>
 </head>
 <body>
+
+<!-- Theme toggle -->
+<button class="theme-toggle" id="theme-toggle" onclick="toggleThema()" title="Thema wisselen">&#x1F319;</button>
 
 <div class="shell">
     <!-- SIDEBAR -->
@@ -522,6 +624,8 @@
                 <button class="btn-gps-full" id="gps-btn" onclick="zoekGPS()">&#x1F4CD; Gebruik mijn locatie</button>
             </div>
             <div id="res"></div>
+            <!-- Favorieten -->
+            <div id="fav-section" class="fav-list"></div>
         </div>
 
         <!-- Moskee -->
@@ -534,6 +638,8 @@
                 <div class="moskee-btns">
                     <button class="btn-sm" onclick="startVergelijk()">Vergelijk</button>
                     <button class="btn-sm" onclick="toonZoek()">Wijzig</button>
+                    <button class="btn-fav" id="fav-btn" onclick="toggleFavoriet()">&#x2606;</button>
+                    <button class="btn-share" onclick="deelTijden()">Deel</button>
                     <button class="btn-sm" id="notif-btn" onclick="toggleNotificaties()">&#x1F514;</button>
                 </div>
             </div>
@@ -581,11 +687,13 @@
                 <div class="ramadan-time suhoor">
                     <div class="rt-label">Suhoor (stop eten)</div>
                     <div class="rt-value" id="suhoor-tijd"></div>
+                    <div class="ramadan-timer-big suhoor" id="suhoor-timer"></div>
                     <div class="rt-countdown" id="suhoor-countdown"></div>
                 </div>
                 <div class="ramadan-time iftar">
                     <div class="rt-label">Iftar (verbreken vasten)</div>
                     <div class="rt-value" id="iftar-tijd"></div>
+                    <div class="ramadan-timer-big iftar" id="iftar-timer"></div>
                     <div class="rt-countdown" id="iftar-countdown"></div>
                 </div>
             </div>
@@ -600,7 +708,8 @@
         <!-- View tabs (Feature 3) -->
         <div id="view-tabs" class="view-tabs" style="display:none">
             <button class="view-tab active" onclick="toonWeergave('vandaag')">Vandaag</button>
-            <button class="view-tab" onclick="toonWeergave('week')">Weekoverzicht</button>
+            <button class="view-tab" onclick="toonWeergave('week')">Week</button>
+            <button class="view-tab" onclick="toonWeergave('maand')">Maand</button>
         </div>
 
         <!-- Vandaag view wrapper -->
@@ -665,6 +774,16 @@
                 </div>
             </div>
         </div>
+
+        <!-- Maand view -->
+        <div id="maand-view" style="display:none">
+            <div id="maand-card" class="card">
+                <div class="card-label" id="maand-label">Maandoverzicht gebedstijden (berekend)</div>
+                <div class="maand-scroll">
+                    <table class="maand-table" id="maand-table"></table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -674,6 +793,8 @@ let _rh=null;
 let _countdownInterval=null;
 let _laatsteData=null;
 let _sunAnimFrame=null;
+let _favorieten=[];
+let _ramadanTimerInterval=null;
 const isDesktop=()=>window.innerWidth>768;
 
 // Feature 2: Vergelijking
@@ -691,12 +812,19 @@ const NOTIF_MINUTEN_VOOR=10;
 // Feature 1: Device orientation
 let _deviceHeading=null;
 
+// Feature 7: Thema
+let _thema=localStorage.getItem('thema')||'dark';
+
 // Service Worker registratie
 if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+    // Thema herstellen
+    applyThema(_thema);
+    // Favorieten laden
+    laadFavorieten();
     CFG?laadTijden():toonZoek();
     document.getElementById('si').addEventListener('keydown',e=>{if(e.key==='Enter')zoek()});
     initDeviceOrientation();
@@ -704,11 +832,96 @@ document.addEventListener('DOMContentLoaded',()=>{
     updateNotifUI();
 });
 
+// ═══ Feature 7: Thema wisselen ═══
+function toggleThema(){
+    _thema=_thema==='dark'?'light':'dark';
+    localStorage.setItem('thema',_thema);
+    applyThema(_thema);
+}
+function applyThema(t){
+    document.documentElement.setAttribute('data-theme',t==='light'?'light':'');
+    const btn=document.getElementById('theme-toggle');
+    if(btn)btn.innerHTML=t==='light'?'&#x2600;&#xFE0F;':'&#x1F319;';
+    // Update meta theme-color
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.content=t==='light'?'#f0f2f5':'#0b0f1a';
+}
+
+// ═══ Feature 8: Favorieten ═══
+async function laadFavorieten(){
+    try{
+        const resp=await fetch('/api/favorieten');
+        _favorieten=await resp.json();
+    }catch(e){_favorieten=[]}
+    toonFavorieten();
+}
+function toonFavorieten(){
+    const sec=document.getElementById('fav-section');
+    if(!sec)return;
+    if(!_favorieten.length){sec.innerHTML='';return}
+    sec.innerHTML='<div style="font-size:11px;color:var(--dim);margin-bottom:6px;font-weight:600">FAVORIETEN</div>'+
+        _favorieten.map((f,i)=>`<div class="fav-item" onclick='kies(${JSON.stringify(f)})'>
+            <span class="fav-star">&#x2605;</span>
+            <div style="flex:1;min-width:0">
+                <div class="fav-name">${f.naam}</div>
+            </div>
+            <button class="fav-remove" onclick="event.stopPropagation();verwijderFavoriet(${i})">&times;</button>
+        </div>`).join('');
+}
+async function toggleFavoriet(){
+    if(!CFG)return;
+    const idx=_favorieten.findIndex(f=>f.slug===CFG.slug);
+    if(idx>=0){
+        _favorieten.splice(idx,1);
+    } else {
+        _favorieten.push({naam:CFG.moskee_naam,slug:CFG.slug,uuid:CFG.uuid,lat:CFG.latitude,lon:CFG.longitude});
+    }
+    await fetch('/api/favorieten',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_favorieten)});
+    updateFavUI();
+    toonFavorieten();
+}
+async function verwijderFavoriet(i){
+    _favorieten.splice(i,1);
+    await fetch('/api/favorieten',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_favorieten)});
+    toonFavorieten();
+}
+function updateFavUI(){
+    const btn=document.getElementById('fav-btn');
+    if(!btn||!CFG)return;
+    const isFav=_favorieten.some(f=>f.slug===CFG.slug);
+    btn.innerHTML=isFav?'&#x2605;':'&#x2606;';
+    btn.classList.toggle('saved',isFav);
+}
+
+// ═══ Feature 9: Deel knop ═══
+function deelTijden(){
+    if(!_laatsteData)return;
+    const d=_laatsteData;
+    let tekst=`Gebedstijden ${d.moskee} - ${d.datum}\n`;
+    if(d.datum_hijri)tekst+=`${d.datum_hijri}\n`;
+    tekst+='\n';
+    d.vergelijking.forEach(v=>{
+        tekst+=`${v.naam}: ${v.moskee}`;
+        if(v.iqama&&v.iqama!=='\u2014')tekst+=` (iqama ${v.iqama})`;
+        tekst+='\n';
+    });
+    tekst+='\nVia Gebedstijden Checker';
+    if(navigator.share){
+        navigator.share({title:'Gebedstijden',text:tekst}).catch(()=>{});
+    } else {
+        navigator.clipboard.writeText(tekst).then(()=>{
+            const btn=document.querySelector('.btn-share');
+            if(btn){btn.textContent='Gekopieerd!';setTimeout(()=>{btn.textContent='Deel'},1500)}
+        }).catch(()=>{});
+    }
+}
+
 function toonZoek(){
     _vergelijkModus=false;
-    show('zoek');hide('mc','st','tc','zc','oz-sidebar','oz-main','zst-card','qibla-card','vgl-card','ramadan-card','view-tabs','week-view');
+    show('zoek');hide('mc','st','tc','zc','oz-sidebar','oz-main','zst-card','qibla-card','vgl-card','ramadan-card','view-tabs','week-view','maand-view');
     const terugBtn=document.getElementById('btn-terug');
     if(terugBtn)terugBtn.style.display=CFG?'':'none';
+    toonFavorieten();
     document.getElementById('si').focus();
 }
 function show(...ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=''})}
@@ -818,14 +1031,19 @@ function toonVergelijking(){
 // ═══ Feature 3: Week weergave ═══
 function toonWeergave(w){
     _huidigeWeergave=w;
+    const tabs=['vandaag','week','maand'];
     document.querySelectorAll('.view-tab').forEach((t,i)=>{
-        t.classList.toggle('active',i===(w==='vandaag'?0:1));
+        t.classList.toggle('active',tabs[i]===w);
     });
+    hide('vandaag-view','week-view','maand-view');
     if(w==='vandaag'){
-        show('vandaag-view');hide('week-view');
-    } else {
-        hide('vandaag-view');show('week-view');
+        show('vandaag-view');
+    } else if(w==='week'){
+        show('week-view');
         laadWeek();
+    } else {
+        show('maand-view');
+        laadMaand();
     }
 }
 
@@ -882,6 +1100,53 @@ function updateRamadanCountdowns(suhoor,iftar){
     const ic=document.getElementById('iftar-countdown');
     if(sc)sc.textContent=countdown(suhoor);
     if(ic)ic.textContent=countdown(iftar);
+}
+
+// Suhoor/Iftar live timer (seconden)
+function updateRamadanTimers(suhoor,iftar){
+    const nu=new Date();
+    const nuSec=nu.getHours()*3600+nu.getMinutes()*60+nu.getSeconds();
+    function timerTekst(tijd){
+        if(!tijd||tijd==='--:--'||tijd==='\u2014')return'';
+        const[h,m]=tijd.split(':').map(Number);
+        let diff=h*3600+m*60-nuSec;
+        if(diff<0)return'00:00:00';
+        const uu=Math.floor(diff/3600);diff%=3600;
+        const mm=Math.floor(diff/60);
+        const ss=diff%60;
+        return `${String(uu).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    }
+    const st=document.getElementById('suhoor-timer');
+    const it=document.getElementById('iftar-timer');
+    if(st)st.textContent=timerTekst(suhoor);
+    if(it)it.textContent=timerTekst(iftar);
+    // Update countdown text too
+    updateRamadanCountdowns(suhoor,iftar);
+}
+
+// ═══ Maandoverzicht ═══
+async function laadMaand(){
+    const tbl=document.getElementById('maand-table');
+    tbl.innerHTML='<tr><td colspan="8" style="padding:20px;color:var(--dim)">Laden...</td></tr>';
+    try{
+        const resp=await fetch('/api/maand');
+        const data=await resp.json();
+        if(data.error){tbl.innerHTML=`<tr><td colspan="8" style="color:var(--red)">${data.error}</td></tr>`;return}
+        document.getElementById('maand-label').textContent=`${data.maand} ${data.jaar} - gebedstijden (berekend)`;
+        let html='<thead><tr><th>Dag</th><th>Fajr</th><th>Shr</th><th>Dhuhr</th><th>Asr</th><th>Mgh</th><th>Isha</th></tr></thead><tbody>';
+        data.dagen.forEach(d=>{
+            const cls=d.is_vandaag?'today':'';
+            html+=`<tr class="${cls}">`;
+            html+=`<td class="week-dag">${d.dag} ${d.dag_nr}</td>`;
+            html+=`<td>${d.tijden.fajr}</td><td>${d.tijden.shurooq}</td><td>${d.tijden.dhuhr}</td>`;
+            html+=`<td>${d.tijden.asr}</td><td>${d.tijden.maghrib}</td><td>${d.tijden.isha}</td>`;
+            html+='</tr>';
+        });
+        html+='</tbody>';
+        tbl.innerHTML=html;
+    }catch(e){
+        tbl.innerHTML=`<tr><td colspan="8" style="color:var(--red)">Fout: ${e}</td></tr>`;
+    }
 }
 
 // ═══ Feature 6: Notificaties ═══
@@ -991,7 +1256,7 @@ function updateCompass(){
 
 // ═══ MAIN LOAD ═══
 async function laadTijden(){
-    show('ld');hide('tc','zc','oz-sidebar','oz-main','st','zst-card','qibla-card','vgl-card','ramadan-card','view-tabs','week-view');
+    show('ld');hide('tc','zc','oz-sidebar','oz-main','st','zst-card','qibla-card','vgl-card','ramadan-card','view-tabs','week-view','maand-view','zoek');
     const data=await(await fetch('/api/tijden')).json();
     hide('ld');
     if(data.error){alert(data.error);toonZoek();return}
@@ -1027,7 +1292,7 @@ async function laadTijden(){
                 <div class="g-col"><div class="gc-l">Moskee</div><div class="gc-v">${v.moskee}</div></div>
                 <div class="g-col iqama"><div class="gc-l">Iqama</div><div class="gc-v">${iqTijd}</div></div>
                 <div class="g-col"><div class="gc-l">Berekend</div><div class="gc-v">${v.berekend}</div></div>
-                <div class="g-badge ${v.status}">${v.verschil>0?'+':''}${v.verschil}</div>
+                <div class="g-badge ${v.status}" title="${v.verschil>0?'Moskee is '+v.verschil+' min later':v.verschil<0?'Moskee is '+Math.abs(v.verschil)+' min eerder':'Exact gelijk'}">${v.verschil>0?'+':''}${v.verschil} min</div>
             </div>
         </div>`;
     }).join('');
@@ -1132,6 +1397,19 @@ async function laadTijden(){
 
     // Update compass met device heading
     updateCompass();
+
+    // Update favoriet knop
+    updateFavUI();
+
+    // Ramadan live timer
+    if(data.is_ramadan){
+        if(_ramadanTimerInterval)clearInterval(_ramadanTimerInterval);
+        _ramadanTimerInterval=setInterval(()=>{
+            const fajr=data.vergelijking.find(v=>v.key==='fajr');
+            const maghrib=data.vergelijking.find(v=>v.key==='maghrib');
+            updateRamadanTimers(fajr?fajr.moskee:'--:--',maghrib?maghrib.moskee:'--:--');
+        },1000);
+    }
 }
 
 function bepaalVolgend(vergelijking){
