@@ -112,31 +112,59 @@
         .btn-sm.notif-active{border-color:var(--green);color:var(--green)}
 
         /* ── Zoek ── */
+        .zoek-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+        .zoek-header h3{flex:1;font-size:16px;font-weight:600}
+        .btn-terug{
+            display:inline-flex;align-items:center;gap:4px;
+            padding:7px 14px;border-radius:8px;border:1px solid var(--border);
+            background:transparent;color:var(--dim);font-size:13px;cursor:pointer;
+            transition:all .2s;
+        }
+        .btn-terug:hover{border-color:var(--accent);color:var(--accent)}
         .search-row{display:flex;gap:8px}
         .search-row input{
-            flex:1;padding:11px 14px;border-radius:10px;
+            flex:1;min-width:0;padding:12px 16px;border-radius:12px;
             border:1px solid var(--border);background:var(--bg);
-            color:#fff;font-size:16px;outline:none;
+            color:#fff;font-size:15px;outline:none;
+            transition:border-color .2s;
         }
-        .search-row input:focus{border-color:var(--accent)}
+        .search-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(74,158,255,.15)}
         .search-row button{
-            padding:11px 18px;border-radius:10px;border:none;
+            padding:12px 20px;border-radius:12px;border:none;
             background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer;
+            flex-shrink:0;transition:background .2s;
         }
+        .search-row button:hover{background:#3b8de6}
         .btn-gps{
-            padding:11px 14px;border-radius:10px;border:none;
-            background:var(--surface2);color:var(--text);font-size:14px;cursor:pointer;
-            white-space:nowrap;flex-shrink:0;
+            padding:12px 14px;border-radius:12px;border:none;
+            background:var(--surface2);color:var(--text);font-size:16px;cursor:pointer;
+            white-space:nowrap;flex-shrink:0;transition:all .2s;
         }
         .btn-gps:hover{background:var(--accent);color:#fff}
         .btn-gps.loading{opacity:.6;pointer-events:none}
-        .res-item{
-            padding:11px;border-radius:9px;background:var(--bg);
-            margin-top:6px;cursor:pointer;border:1px solid transparent;
+        .zoek-divider{
+            display:flex;align-items:center;gap:10px;margin:14px 0 10px;color:var(--dim);font-size:12px;
         }
-        .res-item:hover,.res-item:active{border-color:var(--accent)}
+        .zoek-divider::before,.zoek-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+        .gps-row{
+            display:flex;justify-content:center;
+        }
+        .btn-gps-full{
+            display:flex;align-items:center;justify-content:center;gap:8px;
+            width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
+            background:var(--surface2);color:var(--text);font-size:14px;cursor:pointer;
+            transition:all .2s;
+        }
+        .btn-gps-full:hover{border-color:var(--accent);color:var(--accent)}
+        .btn-gps-full.loading{opacity:.6;pointer-events:none}
+        .res-item{
+            padding:12px;border-radius:10px;background:var(--bg);
+            margin-top:8px;cursor:pointer;border:1px solid transparent;
+            transition:all .15s;
+        }
+        .res-item:hover,.res-item:active{border-color:var(--accent);background:var(--surface2)}
         .res-item .ri-n{font-weight:600;font-size:13px}
-        .res-item .ri-a{color:var(--dim);font-size:11px;margin-top:1px}
+        .res-item .ri-a{color:var(--dim);font-size:11px;margin-top:2px}
 
         /* ── Status pill ── */
         .pill{
@@ -480,11 +508,17 @@
 
         <!-- Zoek -->
         <div id="zoek" class="card" style="display:none">
-            <div class="card-label">Moskee zoeken</div>
+            <div class="zoek-header">
+                <h3>Moskee zoeken</h3>
+                <button class="btn-terug" id="btn-terug" style="display:none" onclick="laadTijden()">&#8592; Terug</button>
+            </div>
             <div class="search-row">
-                <input type="text" id="si" placeholder="Stad of naam..." />
+                <input type="text" id="si" placeholder="Zoek op stad of moskee naam..." />
                 <button onclick="zoek()">Zoek</button>
-                <button class="btn-gps" id="gps-btn" onclick="zoekGPS()">&#x1F4CD;</button>
+            </div>
+            <div class="zoek-divider">of</div>
+            <div class="gps-row">
+                <button class="btn-gps-full" id="gps-btn" onclick="zoekGPS()">&#x1F4CD; Gebruik mijn locatie</button>
             </div>
             <div id="res"></div>
         </div>
@@ -671,6 +705,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 function toonZoek(){
     _vergelijkModus=false;
     show('zoek');hide('mc','st','tc','zc','oz-sidebar','oz-main','zst-card','qibla-card','vgl-card','ramadan-card','view-tabs','week-view');
+    const terugBtn=document.getElementById('btn-terug');
+    if(terugBtn)terugBtn.style.display=CFG?'':'none';
     document.getElementById('si').focus();
 }
 function show(...ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=''})}
@@ -680,9 +716,9 @@ function hide(...ids){ids.forEach(id=>{const el=document.getElementById(id);if(e
 async function zoekGPS(){
     if(!navigator.geolocation){alert('GPS niet beschikbaar in deze browser');return}
     const btn=document.getElementById('gps-btn');
-    btn.classList.add('loading');btn.textContent='...';
+    btn.classList.add('loading');btn.textContent='Locatie zoeken...';
     navigator.geolocation.getCurrentPosition(async(pos)=>{
-        btn.classList.remove('loading');btn.innerHTML='&#x1F4CD;';
+        btn.classList.remove('loading');btn.innerHTML='&#x1F4CD; Gebruik mijn locatie';
         const lat=pos.coords.latitude,lon=pos.coords.longitude;
         try{
             const resp=await fetch(`/api/dichtbij?lat=${lat}&lon=${lon}`);
@@ -698,7 +734,7 @@ async function zoekGPS(){
             }
         }catch(e){alert('Fout bij zoeken: '+e)}
     },(err)=>{
-        btn.classList.remove('loading');btn.innerHTML='&#x1F4CD;';
+        btn.classList.remove('loading');btn.innerHTML='&#x1F4CD; Gebruik mijn locatie';
         alert('Locatie niet beschikbaar: '+err.message);
     },{enableHighAccuracy:true,timeout:10000});
 }
