@@ -48,6 +48,12 @@ def gregorian_naar_hijri(jaar, maand, dag):
     h_jaar = 30 * n + j - 30
 
     maand_naam = HIJRI_MAANDEN[h_maand - 1] if 1 <= h_maand <= 12 else '?'
+    return h_dag, h_maand, h_jaar, maand_naam
+
+
+def gregorian_naar_hijri_str(jaar, maand, dag):
+    """Geeft een geformateerde Hijri datum string terug."""
+    h_dag, h_maand, h_jaar, maand_naam = gregorian_naar_hijri(jaar, maand, dag)
     return f"{h_dag} {maand_naam} {h_jaar}"
 
 
@@ -61,6 +67,42 @@ BEREKENINGS_METHODES = {
     "Makkah":  {"fajr_hoek": 18.5, "isha_hoek": None},
     "Diyanet": {"fajr_hoek": 18.0, "isha_hoek": 17.0},
 }
+
+# Mecca coördinaten voor Qibla berekening
+MECCA_LAT = 21.4225
+MECCA_LON = 39.8262
+
+
+# ─── Qibla berekening ──────────────────────────────────────────
+
+def bereken_qibla(lat, lon):
+    """Bereken de Qibla richting (bearing) van een locatie naar Mecca."""
+    lat1 = math.radians(lat)
+    lat2 = math.radians(MECCA_LAT)
+    delta_lon = math.radians(MECCA_LON - lon)
+
+    x = math.sin(delta_lon) * math.cos(lat2)
+    y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(delta_lon)
+
+    bearing = math.degrees(math.atan2(x, y))
+    return (bearing + 360) % 360
+
+
+def qibla_richting_tekst(graden):
+    """Geeft windrichting tekst voor een bearing."""
+    richtingen = [
+        (0, "N"), (22.5, "NNO"), (45, "NO"), (67.5, "ONO"),
+        (90, "O"), (112.5, "OZO"), (135, "ZO"), (157.5, "ZZO"),
+        (180, "Z"), (202.5, "ZZW"), (225, "ZW"), (247.5, "WZW"),
+        (270, "W"), (292.5, "WNW"), (315, "NW"), (337.5, "NNW"),
+    ]
+    for i, (hoek, naam) in enumerate(richtingen):
+        volgende = richtingen[(i + 1) % len(richtingen)][0]
+        if volgende < hoek:
+            volgende += 360
+        if hoek <= graden < volgende or (i == len(richtingen) - 1 and graden >= hoek):
+            return naam
+    return "N"
 
 
 # ─── Mawaqit API ────────────────────────────────────────────────
@@ -77,6 +119,12 @@ def mawaqit_request(url):
 
 def mawaqit_zoek(zoekterm):
     url = f"{MAWAQIT_API}/mosque/search?word={urllib.parse.quote(zoekterm)}"
+    return mawaqit_request(url)
+
+
+def mawaqit_zoek_locatie(lat, lon):
+    """Zoek moskeeën in de buurt op basis van coördinaten."""
+    url = f"{MAWAQIT_API}/mosque/search?lat={lat}&lon={lon}"
     return mawaqit_request(url)
 
 
@@ -394,6 +442,30 @@ def api_zoek():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/dichtbij")
+def api_dichtbij():
+    """Zoek moskeeën in de buurt op basis van GPS coördinaten."""
+    lat = request.args.get("lat", type=float)
+    lon = request.args.get("lon", type=float)
+    if lat is None or lon is None:
+        return jsonify({"error": "lat en lon zijn verplicht"}), 400
+    try:
+        resultaten = mawaqit_zoek_locatie(lat, lon)
+        moskees = []
+        for m in resultaten:
+            moskees.append({
+                "naam": m.get("name", "Onbekend"),
+                "adres": m.get("localisation", ""),
+                "uuid": m.get("uuid", ""),
+                "slug": m.get("slug", ""),
+                "lat": m.get("latitude", 0),
+                "lon": m.get("longitude", 0),
+            })
+        return jsonify(moskees)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/berekenen", methods=["POST"])
 def api_berekenen():
     """Bereken astronomische tijden en vergelijk met meegegeven moskee-tijden."""
@@ -438,6 +510,32 @@ def api_kies():
     }
     sla_config_op(config)
     return jsonify({"ok": True})
+
+
+@app.route("/api/moskee_tijden")
+def api_moskee_tijden():
+    """Haal Mawaqit tijden op voor een specifieke moskee (voor vergelijking)."""
+    slug = request.args.get("slug", "")
+    if not slug:
+        return jsonify({"error": "slug is verplicht"}), 400
+    try:
+        resultaten = mawaqit_zoek(slug)
+        if not resultaten:
+            return jsonify({"error": "Moskee niet gevonden"}), 404
+        m = resultaten[0]
+        times = m.get("times", [])
+        naam = m.get("name", "Onbekend")
+        tijden = {
+            "fajr": times[0] if len(times) > 0 else "—",
+            "shurooq": times[1] if len(times) > 1 else "—",
+            "dhuhr": times[2] if len(times) > 2 else "—",
+            "asr": times[3] if len(times) > 3 else "—",
+            "maghrib": times[4] if len(times) > 4 else "—",
+            "isha": times[5] if len(times) > 5 else "—",
+        }
+        return jsonify({"naam": naam, "tijden": tijden})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/tijden")
@@ -506,7 +604,16 @@ def api_tijden():
     zon = zonnestand_info(config["latitude"], config["longitude"], vandaag, tz_str, methode)
 
     # Hijri datum
-    datum_hijri = gregorian_naar_hijri(vandaag.year, vandaag.month, vandaag.day)
+    datum_hijri = gregorian_naar_hijri_str(vandaag.year, vandaag.month, vandaag.day)
+
+    # Qibla hoek (Feature 1)
+    qibla = bereken_qibla(config["latitude"], config["longitude"])
+    qibla_tekst = qibla_richting_tekst(qibla)
+
+    # Ramadan detectie (Feature 5)
+    h_dag, h_maand, h_jaar, _ = gregorian_naar_hijri(vandaag.year, vandaag.month, vandaag.day)
+    is_ramadan = (h_maand == 9)
+    ramadan_dag = h_dag if is_ramadan else None
 
     return jsonify({
         "moskee": config["moskee_naam"],
@@ -516,7 +623,48 @@ def api_tijden():
         "vergelijking": vergelijking,
         "zonnestand": zon,
         "iqama": iqama_data,
+        "qibla_hoek": round(qibla, 1),
+        "qibla_richting": qibla_tekst,
+        "is_ramadan": is_ramadan,
+        "ramadan_dag": ramadan_dag,
     })
+
+
+@app.route("/api/week")
+def api_week():
+    """Geeft gebedstijden voor de komende 7 dagen (berekend)."""
+    config = laad_config()
+    if not config:
+        return jsonify({"error": "Geen moskee geselecteerd"}), 400
+
+    tz_str = config.get("tijdzone", "Europe/Amsterdam")
+    tz = ZoneInfo(tz_str)
+    vandaag = datetime.now(tz).date()
+    methode = config.get("methode", "MWL")
+
+    dag_namen = {
+        "Monday": "Maandag", "Tuesday": "Dinsdag", "Wednesday": "Woensdag",
+        "Thursday": "Donderdag", "Friday": "Vrijdag", "Saturday": "Zaterdag",
+        "Sunday": "Zondag",
+    }
+
+    dagen = []
+    for i in range(7):
+        datum = vandaag + timedelta(days=i)
+        tijden = bereken_gebedstijden(
+            config["latitude"], config["longitude"], datum, tz_str, methode
+        )
+        eng_dag = datum.strftime("%A")
+        nl_dag = dag_namen.get(eng_dag, eng_dag)
+        dagen.append({
+            "datum": datum.strftime("%d-%m"),
+            "dag": nl_dag,
+            "dag_kort": nl_dag[:2],
+            "is_vandaag": (i == 0),
+            "tijden": tijden,
+        })
+
+    return jsonify({"dagen": dagen, "methode": methode})
 
 
 if __name__ == "__main__":
