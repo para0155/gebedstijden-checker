@@ -462,13 +462,13 @@ function tekenGrafiek(pad,gebeden,verg){
     const dpr=window.devicePixelRatio||1;
     const W=canvas.parentElement.clientWidth;
     const mob=W<480;
-    const H=mob?260:360;
+    const H=mob?340:360;
     canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
     const c=canvas.getContext('2d');c.scale(dpr,dpr);
 
     const hArr=pad.map(p=>p.hoogte);
-    const top=Math.max(...hArr)+4,bot=-22,rng=top-bot;
-    const mL=mob?32:44,mR=8,mT=mob?10:16,mB=mob?28:36;
+    const top=Math.max(...hArr)+6,bot=-22,rng=top-bot;
+    const mL=mob?36:44,mR=mob?10:8,mT=mob?14:16,mB=mob?38:36;
     const gW=W-mL-mR,gH=H-mT-mB;
 
     const xP=i=>mL+(i/(pad.length-1))*gW;
@@ -480,24 +480,24 @@ function tekenGrafiek(pad,gebeden,verg){
     });
 
     // Schemeringlijnen
-    const fs=mob?7:10;
-    [[-18,'Astronomisch -18°','#5c6bc0'],[-12,'Nautisch -12°','#42a5f5'],[-6,'Burgerlijk -6°','#4fc3f7'],[0,'Horizon 0°','#ff9800']].forEach(([h,lbl,col])=>{
+    const fs=mob?8:10;
+    [[-18,'Astro -18°','#5c6bc0'],[-12,'Naut -12°','#42a5f5'],[-6,'Civil -6°','#4fc3f7'],[0,'Horizon 0°','#ff9800']].forEach(([h,lbl,col])=>{
         const y=yP(h);
         c.save();c.strokeStyle=col;c.globalAlpha=h===0?.6:.35;c.lineWidth=h===0?1.5:.7;c.setLineDash(h===0?[5,4]:[3,5]);
         c.beginPath();c.moveTo(mL,y);c.lineTo(mL+gW,y);c.stroke();c.restore();
-        c.fillStyle=col;c.globalAlpha=.5;c.font=`${fs}px system-ui`;c.textAlign='right';c.fillText(lbl,mL+gW-3,y-2);c.globalAlpha=1;
+        c.fillStyle=col;c.globalAlpha=.55;c.font=`${fs}px system-ui`;c.textAlign='right';c.fillText(lbl,mL+gW-4,y-3);c.globalAlpha=1;
     });
 
     // Y-as
-    c.font=`${mob?8:9}px system-ui`;c.fillStyle='#2d3f5c';c.textAlign='right';
-    for(let h=Math.ceil(bot/10)*10;h<=top;h+=10)c.fillText(h+'°',mL-4,yP(h)+3);
+    c.font=`${mob?9:9}px system-ui`;c.fillStyle='#2d3f5c';c.textAlign='right';
+    for(let h=Math.ceil(bot/10)*10;h<=top;h+=10)c.fillText(h+'°',mL-5,yP(h)+3);
 
     // Glow
     c.beginPath();c.moveTo(xP(0),yP(0));
     for(let i=0;i<pad.length;i++)c.lineTo(xP(i),yP(Math.max(pad[i].hoogte,0)));
     c.lineTo(xP(pad.length-1),yP(0));c.closePath();
     const gl=c.createLinearGradient(0,yP(top),0,yP(0));
-    gl.addColorStop(0,'rgba(245,200,66,0.12)');gl.addColorStop(1,'rgba(245,200,66,0.01)');
+    gl.addColorStop(0,'rgba(245,200,66,0.15)');gl.addColorStop(1,'rgba(245,200,66,0.01)');
     c.fillStyle=gl;c.fill();
 
     // Curve
@@ -506,8 +506,8 @@ function tekenGrafiek(pad,gebeden,verg){
         const p={x:xP(i-1),y:yP(pad[i-1].hoogte)},n={x:xP(i),y:yP(pad[i].hoogte)},mx=(p.x+n.x)/2;
         c.bezierCurveTo(mx,p.y,mx,n.y,n.x,n.y);
     }
-    c.save();c.shadowColor='rgba(245,200,66,.3)';c.shadowBlur=8;c.strokeStyle='#f5c842';c.lineWidth=2.5;c.stroke();c.restore();
-    c.strokeStyle='#ffd54f';c.lineWidth=2;c.stroke();
+    c.save();c.shadowColor='rgba(245,200,66,.3)';c.shadowBlur=10;c.strokeStyle='#f5c842';c.lineWidth=mob?2:2.5;c.stroke();c.restore();
+    c.strokeStyle='#ffd54f';c.lineWidth=mob?1.8:2;c.stroke();
 
     // Markers
     const gk={
@@ -525,14 +525,16 @@ function tekenGrafiek(pad,gebeden,verg){
         pts.push({...g,t,x:xP(bi),y:yP(pad[bi].hoogte)});
     }
 
-    // Anti-overlap
-    const bH=mob?16:20;const lfs=mob?9:11;
+    // Anti-overlap met meer ruimte op mobiel
+    const bH=mob?18:20;const lfs=mob?10:11;
     for(let i=0;i<pts.length;i++){
-        pts[i].ly=pts[i].y-18;
+        pts[i].ly=pts[i].y-20;
         for(let j=0;j<i;j++){
-            if(Math.abs(pts[i].x-pts[j].x)<(mob?40:55)&&Math.abs(pts[i].ly-pts[j].ly)<bH+3)
-                pts[i].ly=pts[j].ly-bH-3;
+            if(Math.abs(pts[i].x-pts[j].x)<(mob?50:55)&&Math.abs(pts[i].ly-pts[j].ly)<bH+4)
+                pts[i].ly=pts[j].ly-bH-4;
         }
+        // Zorg dat labels niet buiten de grafiek vallen
+        if(pts[i].ly<mT+2)pts[i].ly=mT+2;
     }
 
     for(const p of pts){
@@ -543,40 +545,40 @@ function tekenGrafiek(pad,gebeden,verg){
         c.beginPath();c.moveTo(p.x,p.y);c.lineTo(p.x,mT+gH);c.stroke();c.restore();
 
         // Dot
-        const dr=mob?4:6;
+        const dr=mob?5:6;
         c.beginPath();c.arc(p.x,p.y,dr,0,Math.PI*2);c.fillStyle=k.bg;c.fill();c.strokeStyle=k.r;c.lineWidth=2;c.stroke();
-        c.beginPath();c.arc(p.x,p.y,mob?1.5:2,0,Math.PI*2);c.fillStyle=k.fg;c.fill();
+        c.beginPath();c.arc(p.x,p.y,2,0,Math.PI*2);c.fillStyle=k.fg;c.fill();
 
         // Connect
-        c.save();c.strokeStyle=k.r;c.globalAlpha=.2;c.lineWidth=.8;
+        c.save();c.strokeStyle=k.r;c.globalAlpha=.25;c.lineWidth=.8;
         c.beginPath();c.moveTo(p.x,p.y-dr);c.lineTo(p.x,p.ly+bH/2);c.stroke();c.restore();
 
         // Badge
         const hStr=p.hoek!==null?` ${p.hoek}°`:'';
         const txt=p.naam+hStr;
         c.font=`bold ${lfs}px system-ui`;
-        const tw=c.measureText(txt).width+10;
+        const tw=c.measureText(txt).width+mob?14:10;
         const bx=Math.max(mL,Math.min(p.x-tw/2,mL+gW-tw));
         const by=p.ly-bH/2;
 
-        c.fillStyle=k.bg;c.globalAlpha=.9;
-        c.beginPath();c.roundRect(bx,by,tw,bH,4);c.fill();
-        c.globalAlpha=1;c.strokeStyle=k.r;c.lineWidth=.8;c.stroke();
+        c.fillStyle=k.bg;c.globalAlpha=.92;
+        c.beginPath();c.roundRect(bx,by,tw,bH,5);c.fill();
+        c.globalAlpha=1;c.strokeStyle=k.r;c.lineWidth=1;c.stroke();
 
         c.fillStyle=k.fg;c.font=`bold ${lfs}px system-ui`;c.textAlign='center';
-        c.fillText(p.naam,bx+tw/2-(hStr?c.measureText(hStr).width/2:0),by+bH/2+3);
-        if(hStr){c.fillStyle=k.r;c.font=`${lfs-2}px system-ui`;
-        c.fillText(hStr,bx+tw/2+c.measureText(p.naam).width/2,by+bH/2+3)}
+        c.fillText(p.naam,bx+tw/2-(hStr?c.measureText(hStr).width/2:0),by+bH/2+4);
+        if(hStr){c.fillStyle=k.r;c.font=`${lfs-1}px system-ui`;
+        c.fillText(hStr,bx+tw/2+c.measureText(p.naam).width/2,by+bH/2+4)}
 
-        // Tijd
-        c.fillStyle='#3d506e';c.font=`${mob?7:9}px system-ui`;c.textAlign='center';
-        c.fillText(p.t,p.x,mT+gH+(mob?10:14));
+        // Tijd onder de grafiek
+        c.fillStyle='#4a6080';c.font=`bold ${mob?9:9}px system-ui`;c.textAlign='center';
+        c.fillText(p.t,p.x,mT+gH+(mob?14:14));
     }
 
     // X-as
-    c.fillStyle='#2d3f5c';c.font=`${mob?7:8}px system-ui`;c.textAlign='center';
-    const step=mob?6:3;
-    for(let h=0;h<=24;h+=step){const idx=Math.round((h*60)/10);if(idx<pad.length)c.fillText(`${h.toString().padStart(2,'0')}:00`,xP(idx),mT+gH+(mob?22:30))}
+    c.fillStyle='#2d3f5c';c.font=`${mob?8:8}px system-ui`;c.textAlign='center';
+    const step=mob?4:3;
+    for(let h=0;h<=24;h+=step){const idx=Math.round((h*60)/10);if(idx<pad.length)c.fillText(`${h.toString().padStart(2,'0')}:00`,xP(idx),mT+gH+(mob?28:30))}
 }
 </script>
 </body>
