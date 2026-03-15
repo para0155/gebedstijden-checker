@@ -462,13 +462,13 @@ function tekenGrafiek(pad,gebeden,verg){
     const dpr=window.devicePixelRatio||1;
     const W=canvas.parentElement.clientWidth;
     const mob=W<480;
-    const H=mob?340:360;
+    const H=mob?380:360;
     canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.height=H+'px';
     const c=canvas.getContext('2d');c.scale(dpr,dpr);
 
     const hArr=pad.map(p=>p.hoogte);
-    const top=Math.max(...hArr)+6,bot=-22,rng=top-bot;
-    const mL=mob?36:44,mR=mob?10:8,mT=mob?14:16,mB=mob?38:36;
+    const top=Math.max(...hArr)+8,bot=-22,rng=top-bot;
+    const mL=mob?38:44,mR=mob?12:8,mT=mob?16:16,mB=mob?32:36;
     const gW=W-mL-mR,gH=H-mT-mB;
 
     const xP=i=>mL+(i/(pad.length-1))*gW;
@@ -479,18 +479,19 @@ function tekenGrafiek(pad,gebeden,verg){
         c.fillStyle=col;c.fillRect(mL,yP(b),gW,yP(a)-yP(b));
     });
 
-    // Schemeringlijnen
-    const fs=mob?8:10;
-    [[-18,'Astro -18°','#5c6bc0'],[-12,'Naut -12°','#42a5f5'],[-6,'Civil -6°','#4fc3f7'],[0,'Horizon 0°','#ff9800']].forEach(([h,lbl,col])=>{
+    // Schemeringlijnen — alleen op Y-as labels, geen tekst op de lijn (voorkomt overlap)
+    [[-18,'#5c6bc0'],[-12,'#42a5f5'],[-6,'#4fc3f7'],[0,'#ff9800']].forEach(([h,col])=>{
         const y=yP(h);
-        c.save();c.strokeStyle=col;c.globalAlpha=h===0?.6:.35;c.lineWidth=h===0?1.5:.7;c.setLineDash(h===0?[5,4]:[3,5]);
+        c.save();c.strokeStyle=col;c.globalAlpha=h===0?.5:.25;c.lineWidth=h===0?1.5:.7;c.setLineDash(h===0?[5,4]:[3,5]);
         c.beginPath();c.moveTo(mL,y);c.lineTo(mL+gW,y);c.stroke();c.restore();
-        c.fillStyle=col;c.globalAlpha=.55;c.font=`${fs}px system-ui`;c.textAlign='right';c.fillText(lbl,mL+gW-4,y-3);c.globalAlpha=1;
     });
 
-    // Y-as
-    c.font=`${mob?9:9}px system-ui`;c.fillStyle='#2d3f5c';c.textAlign='right';
-    for(let h=Math.ceil(bot/10)*10;h<=top;h+=10)c.fillText(h+'°',mL-5,yP(h)+3);
+    // Y-as met schemeringlabels
+    c.font=`${mob?9:9}px system-ui`;c.textAlign='right';
+    for(let h=Math.ceil(bot/10)*10;h<=top;h+=10){
+        c.fillStyle='#2d3f5c';
+        c.fillText(h+'°',mL-5,yP(h)+3);
+    }
 
     // Glow
     c.beginPath();c.moveTo(xP(0),yP(0));
@@ -525,23 +526,38 @@ function tekenGrafiek(pad,gebeden,verg){
         pts.push({...g,t,x:xP(bi),y:yP(pad[bi].hoogte)});
     }
 
-    // Anti-overlap met meer ruimte op mobiel
-    const bH=mob?18:20;const lfs=mob?10:11;
+    // Badge afmetingen
+    const bH=mob?17:20;const lfs=mob?9:11;
+
+    // Meet alle badge breedtes van tevoren
+    for(const p of pts){
+        c.font=`bold ${lfs}px system-ui`;
+        p.tw=c.measureText(p.naam).width+12;
+    }
+
+    // Anti-overlap: labels BOVEN de dot, met betere collision detection
     for(let i=0;i<pts.length;i++){
-        pts[i].ly=pts[i].y-20;
+        pts[i].ly=pts[i].y-22;
+        // Check overlap met alle eerdere labels
         for(let j=0;j<i;j++){
-            if(Math.abs(pts[i].x-pts[j].x)<(mob?50:55)&&Math.abs(pts[i].ly-pts[j].ly)<bH+4)
-                pts[i].ly=pts[j].ly-bH-4;
+            const xOverlap=Math.abs(pts[i].x-pts[j].x)<(Math.max(pts[i].tw,pts[j].tw)/2+8);
+            const yOverlap=Math.abs(pts[i].ly-pts[j].ly)<bH+5;
+            if(xOverlap&&yOverlap){
+                pts[i].ly=pts[j].ly-bH-6;
+            }
         }
-        // Zorg dat labels niet buiten de grafiek vallen
+        // Niet buiten de grafiek
         if(pts[i].ly<mT+2)pts[i].ly=mT+2;
     }
+
+    // Teken gebedstijden op X-as (in plaats van uur-labels, zodat ze niet overlappen)
+    const usedXRanges=[];
 
     for(const p of pts){
         const k=gk[p.naam]||{bg:'#333',fg:'#fff',r:'#888'};
 
-        // Line
-        c.save();c.strokeStyle=k.r;c.globalAlpha=.18;c.setLineDash([3,3]);c.lineWidth=1;
+        // Stippellijn naar beneden
+        c.save();c.strokeStyle=k.r;c.globalAlpha=.15;c.setLineDash([3,3]);c.lineWidth=1;
         c.beginPath();c.moveTo(p.x,p.y);c.lineTo(p.x,mT+gH);c.stroke();c.restore();
 
         // Dot
@@ -549,15 +565,13 @@ function tekenGrafiek(pad,gebeden,verg){
         c.beginPath();c.arc(p.x,p.y,dr,0,Math.PI*2);c.fillStyle=k.bg;c.fill();c.strokeStyle=k.r;c.lineWidth=2;c.stroke();
         c.beginPath();c.arc(p.x,p.y,2,0,Math.PI*2);c.fillStyle=k.fg;c.fill();
 
-        // Connect
-        c.save();c.strokeStyle=k.r;c.globalAlpha=.25;c.lineWidth=.8;
+        // Verbindingslijn dot → label
+        c.save();c.strokeStyle=k.r;c.globalAlpha=.2;c.lineWidth=.8;
         c.beginPath();c.moveTo(p.x,p.y-dr);c.lineTo(p.x,p.ly+bH/2);c.stroke();c.restore();
 
-        // Badge
-        const hStr=p.hoek!==null?` ${p.hoek}°`:'';
-        const txt=p.naam+hStr;
+        // Badge — alleen naam, geen hoek (te druk op mobiel)
         c.font=`bold ${lfs}px system-ui`;
-        const tw=c.measureText(txt).width+mob?14:10;
+        const tw=p.tw;
         const bx=Math.max(mL,Math.min(p.x-tw/2,mL+gW-tw));
         const by=p.ly-bH/2;
 
@@ -566,19 +580,36 @@ function tekenGrafiek(pad,gebeden,verg){
         c.globalAlpha=1;c.strokeStyle=k.r;c.lineWidth=1;c.stroke();
 
         c.fillStyle=k.fg;c.font=`bold ${lfs}px system-ui`;c.textAlign='center';
-        c.fillText(p.naam,bx+tw/2-(hStr?c.measureText(hStr).width/2:0),by+bH/2+4);
-        if(hStr){c.fillStyle=k.r;c.font=`${lfs-1}px system-ui`;
-        c.fillText(hStr,bx+tw/2+c.measureText(p.naam).width/2,by+bH/2+4)}
+        c.fillText(p.naam,bx+tw/2,by+bH/2+3);
 
-        // Tijd onder de grafiek
-        c.fillStyle='#4a6080';c.font=`bold ${mob?9:9}px system-ui`;c.textAlign='center';
-        c.fillText(p.t,p.x,mT+gH+(mob?14:14));
+        // Tijd label onder X-as — check overlap
+        c.font=`bold ${mob?8:9}px system-ui`;
+        const tTxt=p.t;
+        const tW=c.measureText(tTxt).width;
+        const tX=p.x;
+        const tY=mT+gH+(mob?12:14);
+        let canPlace=true;
+        for(const r of usedXRanges){
+            if(Math.abs(tX-r)<(mob?32:36)){canPlace=false;break}
+        }
+        if(canPlace){
+            c.fillStyle=k.r;c.globalAlpha=.7;c.textAlign='center';
+            c.fillText(tTxt,tX,tY);
+            c.globalAlpha=1;
+            usedXRanges.push(tX);
+        }
     }
 
-    // X-as
-    c.fillStyle='#2d3f5c';c.font=`${mob?8:8}px system-ui`;c.textAlign='center';
-    const step=mob?4:3;
-    for(let h=0;h<=24;h+=step){const idx=Math.round((h*60)/10);if(idx<pad.length)c.fillText(`${h.toString().padStart(2,'0')}:00`,xP(idx),mT+gH+(mob?28:30))}
+    // X-as uurlabels — skip als te dicht bij gebedstijd-labels
+    c.fillStyle='#2d3f5c';c.font=`${mob?7:8}px system-ui`;c.textAlign='center';
+    const step=mob?6:3;
+    for(let h=0;h<=24;h+=step){
+        const idx=Math.round((h*60)/10);if(idx>=pad.length)continue;
+        const x=xP(idx);
+        let tooClose=false;
+        for(const r of usedXRanges){if(Math.abs(x-r)<(mob?28:32)){tooClose=true;break}}
+        if(!tooClose)c.fillText(`${h.toString().padStart(2,'0')}:00`,x,mT+gH+(mob?24:30));
+    }
 }
 </script>
 </body>
