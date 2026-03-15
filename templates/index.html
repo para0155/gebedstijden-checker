@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0b0f1a">
+    <link rel="manifest" href="/static/manifest.json">
     <title>Gebedstijden Checker</title>
     <style>
         :root {
@@ -264,11 +266,20 @@
             .zs-item .zv{font-size:18px}
         }
 
+        /* ── Iqama column ── */
+        .g-col.iqama .gc-v{font-size:13px;color:var(--dim)}
+        .g-col.iqama .gc-l{color:var(--dim);opacity:.7}
+
+        /* ── Hijri datum ── */
+        .hijri{color:var(--gold);font-size:11px;margin-top:2px;opacity:.85}
+
         /* ── Small phones ── */
         @media(max-width:380px){
             .zs-grid{grid-template-columns:repeat(2,1fr)}
             .g-col .gc-v{font-size:13px}
+            .g-col.iqama .gc-v{font-size:11px}
             .g-row .g-name{font-size:12px}
+            .g-col{min-width:38px}
         }
     </style>
 </head>
@@ -354,7 +365,15 @@
 <script>
 const CFG={{config|tojson}};
 let _rh=null;
+let _countdownInterval=null;
+let _laatsteData=null;
+let _sunAnimFrame=null;
 const isDesktop=()=>window.innerWidth>768;
+
+// Service Worker registratie
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
+}
 
 document.addEventListener('DOMContentLoaded',()=>{
     CFG?laadTijden():toonZoek();
@@ -391,7 +410,7 @@ async function laadTijden(){
 
     show('mc');
     document.getElementById('mn').textContent=data.moskee;
-    document.getElementById('md').textContent=`${data.datum}  ·  ${data.methode}`;
+    document.getElementById('md').innerHTML=`${data.datum}  ·  ${data.methode}${data.datum_hijri?`<div class="hijri">${data.datum_hijri}</div>`:''}`;
 
     // Status
     const w=data.vergelijking.filter(v=>v.status!=='ok');
@@ -413,10 +432,12 @@ async function laadTijden(){
     show('tc');
     document.getElementById('tl').innerHTML=data.vergelijking.map(v=>{
         const isNext=v.naam===volgend;
+        const iqTijd=v.iqama&&v.iqama!=='—'?v.iqama:'—';
         return `<div class="g-row${isNext?' next':''}">
             <div class="gl"><span class="g-dot ${v.status}"></span><span class="g-name">${v.naam}</span></div>
             <div class="gr">
                 <div class="g-col"><div class="gc-l">Moskee</div><div class="gc-v">${v.moskee}</div></div>
+                <div class="g-col iqama"><div class="gc-l">Iqama</div><div class="gc-v">${iqTijd}</div></div>
                 <div class="g-col"><div class="gc-l">Berekend</div><div class="gc-v">${v.berekend}</div></div>
                 <div class="g-badge ${v.status}">${v.verschil>0?'+':''}${v.verschil}</div>
             </div>
@@ -432,38 +453,7 @@ async function laadTijden(){
 
     // Overzicht: gebed + zonnestand in 1 kaart
     const hoeken=z.gebedstijd_hoeken||[];
-    const vMap={};data.vergelijking.forEach(v=>{vMap[v.naam]={moskee:v.moskee,berekend:v.berekend}});
-
-    const ozHTML=hoeken.map(h=>{
-        const cls=h.hoek===null?'nul':h.hoek>0?'pos':h.hoek<0?'neg':'nul';
-        const val=h.hoek!==null?(h.hoek>0?'+':'')+h.hoek+'°':'—';
-        const tijden=vMap[h.naam]||{};
-        const tijd=tijden.moskee||tijden.berekend||h.tijd||'—';
-        const isNext=h.naam===volgend;
-        // Bereken resterende tijd
-        let restLabel='';
-        if(isNext&&tijd!=='—'){
-            const[th,tm]=tijd.split(':').map(Number);
-            let diff=th*60+tm-nuMin;
-            if(diff>0){
-                const uur=Math.floor(diff/60);
-                const min=diff%60;
-                restLabel=uur>0?`Over ${uur}u ${min}m`:`Over ${min} min`;
-            }
-        }
-        return `<div class="oz-row${isNext?' next':''}">
-            <div class="oz-icon">${h.icoon}</div>
-            <div class="oz-info">
-                <div class="oz-naam">${h.naam}</div>
-                <div class="oz-zon">${h.uitleg}</div>
-                ${isNext?`<div class="oz-next-label">${restLabel}</div>`:''}
-            </div>
-            <div class="oz-right">
-                <div class="oz-tijd">${tijd}</div>
-                <div class="oz-hoek ${cls}">${val}</div>
-            </div>
-        </div>`;
-    }).join('');
+    const ozHTML=buildOzHTML(hoeken,data.vergelijking);
 
     if(isDesktop()){
         show('oz-sidebar');hide('oz-main');
@@ -508,12 +498,84 @@ async function laadTijden(){
     if(_rh)window.removeEventListener('resize',_rh);
     const draw=()=>tekenGrafiek(z.zonnepad,hoeken,data.vergelijking);
     setTimeout(draw,80);
+    // Animatie loop voor pulserende zon marker (~4fps)
+    if(_sunAnimFrame)clearInterval(_sunAnimFrame);
+    _sunAnimFrame=setInterval(()=>tekenGrafiek(z.zonnepad,hoeken,data.vergelijking),250);
     _rh=()=>{
-        if(isDesktop()){show('oz-sidebar');hide('oz-main');document.getElementById('oz-sidebar-list').innerHTML=ozHTML}
-        else{show('oz-main');hide('oz-sidebar');document.getElementById('oz-main-list').innerHTML=ozHTML}
+        if(isDesktop()){show('oz-sidebar');hide('oz-main');document.getElementById('oz-sidebar-list').innerHTML=buildOzHTML(hoeken,data.vergelijking)}
+        else{show('oz-main');hide('oz-sidebar');document.getElementById('oz-main-list').innerHTML=buildOzHTML(hoeken,data.vergelijking)}
         draw();
     };
     window.addEventListener('resize',_rh);
+
+    // Sla data op voor countdown
+    _laatsteData=data;
+
+    // Auto-refresh countdown elke minuut
+    if(_countdownInterval)clearInterval(_countdownInterval);
+    _countdownInterval=setInterval(()=>updateCountdown(),60000);
+}
+
+function bepaalVolgend(vergelijking){
+    const nu=new Date();
+    const nuMin=nu.getHours()*60+nu.getMinutes();
+    for(const v of vergelijking){
+        if(v.moskee==='—')continue;
+        const[h,m]=v.moskee.split(':').map(Number);
+        if(h*60+m>nuMin)return v.naam;
+    }
+    return null;
+}
+
+function buildOzHTML(hoeken,vergelijking){
+    const nu=new Date();
+    const nuMin=nu.getHours()*60+nu.getMinutes();
+    const volgend=bepaalVolgend(vergelijking);
+    const vMap={};vergelijking.forEach(v=>{vMap[v.naam]={moskee:v.moskee,berekend:v.berekend}});
+    return hoeken.map(h=>{
+        const cls=h.hoek===null?'nul':h.hoek>0?'pos':h.hoek<0?'neg':'nul';
+        const val=h.hoek!==null?(h.hoek>0?'+':'')+h.hoek+'°':'—';
+        const tijden=vMap[h.naam]||{};
+        const tijd=tijden.moskee||tijden.berekend||h.tijd||'—';
+        const isNext=h.naam===volgend;
+        let restLabel='';
+        if(isNext&&tijd!=='—'){
+            const[th,tm]=tijd.split(':').map(Number);
+            let diff=th*60+tm-nuMin;
+            if(diff>0){
+                const uur=Math.floor(diff/60);
+                const min=diff%60;
+                restLabel=uur>0?`Over ${uur}u ${min}m`:`Over ${min} min`;
+            }
+        }
+        return `<div class="oz-row${isNext?' next':''}">
+            <div class="oz-icon">${h.icoon}</div>
+            <div class="oz-info">
+                <div class="oz-naam">${h.naam}</div>
+                <div class="oz-zon">${h.uitleg}</div>
+                ${isNext?`<div class="oz-next-label">${restLabel}</div>`:''}
+            </div>
+            <div class="oz-right">
+                <div class="oz-tijd">${tijd}</div>
+                <div class="oz-hoek ${cls}">${val}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function updateCountdown(){
+    if(!_laatsteData)return;
+    const data=_laatsteData;
+    const hoeken=data.zonnestand.gebedstijd_hoeken||[];
+    const ozHTML=buildOzHTML(hoeken,data.vergelijking);
+    if(isDesktop()){
+        document.getElementById('oz-sidebar-list').innerHTML=ozHTML;
+    } else {
+        document.getElementById('oz-main-list').innerHTML=ozHTML;
+    }
+    // Herteken grafiek (voor bijgewerkte zonpositie)
+    const z=data.zonnestand;
+    tekenGrafiek(z.zonnepad,hoeken,data.vergelijking);
 }
 
 /* ═══ GRAFIEK ═══ */
@@ -672,6 +734,40 @@ function tekenGrafiek(pad,gebeden,verg){
         for(const r of usedXRanges){if(Math.abs(x-r)<(mob?28:32)){tooClose=true;break}}
         if(!tooClose)c.fillText(`${h.toString().padStart(2,'0')}:00`,x,mT+gH+(mob?24:30));
     }
+
+    // ═══ LIVE ZON MARKER ═══
+    const nu=new Date();
+    const nuMin=nu.getHours()*60+nu.getMinutes();
+    // Vind dichtstbijzijnde punt op de curve
+    let sunIdx=0,sunDist=Infinity;
+    for(let i=0;i<pad.length;i++){
+        const d=Math.abs(tM(pad[i].tijd)-nuMin);
+        if(d<sunDist){sunDist=d;sunIdx=i}
+    }
+    // Interpoleer tussen twee punten voor vloeiendere positie
+    let sunX,sunY;
+    const fractie=(nuMin%10)/10;
+    if(sunIdx<pad.length-1){
+        sunX=xP(sunIdx)+(xP(sunIdx+1)-xP(sunIdx))*fractie;
+        const h1=pad[sunIdx].hoogte,h2=pad[sunIdx+1].hoogte;
+        sunY=yP(h1+(h2-h1)*fractie);
+    } else {
+        sunX=xP(sunIdx);sunY=yP(pad[sunIdx].hoogte);
+    }
+    // Pulserende glow (op basis van tijd)
+    const pulse=0.5+0.5*Math.sin(Date.now()/400);
+    const glowR=12+pulse*6;
+    // Buitenste glow
+    const sunGlow=c.createRadialGradient(sunX,sunY,0,sunX,sunY,glowR);
+    sunGlow.addColorStop(0,'rgba(255,235,59,0.6)');
+    sunGlow.addColorStop(0.4,'rgba(255,200,0,0.2)');
+    sunGlow.addColorStop(1,'rgba(255,200,0,0)');
+    c.fillStyle=sunGlow;
+    c.beginPath();c.arc(sunX,sunY,glowR,0,Math.PI*2);c.fill();
+    // Kern
+    c.beginPath();c.arc(sunX,sunY,4,0,Math.PI*2);
+    c.fillStyle='#ffeb3b';c.fill();
+    c.strokeStyle='#fff';c.lineWidth=1.5;c.stroke();
 }
 </script>
 </body>

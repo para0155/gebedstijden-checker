@@ -15,9 +15,42 @@ from astral import LocationInfo
 from astral.sun import sun, elevation, noon
 from flask import Flask, render_template, request, jsonify
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 CONFIG_BESTAND = Path(__file__).parent / "config.json"
+
+HIJRI_MAANDEN = [
+    'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
+    'Jumada al-Ula', 'Jumada al-Thani', 'Rajab', "Sha'ban",
+    'Ramadan', 'Shawwal', 'Dhul Qi\'dah', 'Dhul Hijjah',
+]
+
+
+def gregorian_naar_hijri(jaar, maand, dag):
+    """Omm al-Qura-achtige benadering: Gregoriaans naar Hijri conversie."""
+    # Bereken Julian Day Number
+    if maand <= 2:
+        jaar -= 1
+        maand += 12
+    A = jaar // 100
+    B = 2 - A + A // 4
+    jd = int(365.25 * (jaar + 4716)) + int(30.6001 * (maand + 1)) + dag + B - 1524.5
+
+    # Hijri conversie vanuit Julian Day
+    jd = jd - 1948439.5 + 0.5
+    l = int(jd) + 10632
+    n = int((l - 1) / 10631)
+    l = l - 10631 * n + 354
+    j = int((10985 - l) / 5316) * int((50 * l) / 17719) + int(l / 5670) * int((43 * l) / 15238)
+    l = l - int((30 - j) / 15) * int((17719 * j) / 50) - int(j / 16) * int((15238 * j) / 43) + 29
+    h_maand = int((24 * l) / 709)
+    h_dag = l - int((709 * h_maand) / 24)
+    h_jaar = 30 * n + j - 30
+
+    maand_naam = HIJRI_MAANDEN[h_maand - 1] if 1 <= h_maand <= 12 else '?'
+    return f"{h_dag} {maand_naam} {h_jaar}"
+
+
 MAX_AFWIJKING_MINUTEN = 5
 MAWAQIT_API = "https://mawaqit.net/api/2.0"
 
@@ -292,17 +325,20 @@ def verschil_min(t1_str, t2_str):
     return round((t1 - t2).total_seconds() / 60)
 
 
-def vergelijk_tijden(moskee_tijden, berekende_tijden):
+def vergelijk_tijden(moskee_tijden, berekende_tijden, iqama_data=None):
     gebeden = ["fajr", "shurooq", "dhuhr", "asr", "maghrib", "isha"]
     namen = {"fajr": "Fajr", "shurooq": "Shurooq", "dhuhr": "Dhuhr",
              "asr": "Asr", "maghrib": "Maghrib", "isha": "Isha"}
     iconen = {"fajr": "🌙", "shurooq": "🌅", "dhuhr": "☀️",
               "asr": "🌤️", "maghrib": "🌇", "isha": "🌃"}
+    if iqama_data is None:
+        iqama_data = {}
 
     resultaten = []
     for key in gebeden:
         moskee = moskee_tijden.get(key, "—")
         berekend = berekende_tijden.get(key, "—")
+        iqama = iqama_data.get(key, "—")
         if moskee != "—" and berekend != "—":
             verschil = verschil_min(moskee, berekend)
             if abs(verschil) <= MAX_AFWIJKING_MINUTEN:
@@ -320,6 +356,7 @@ def vergelijk_tijden(moskee_tijden, berekende_tijden):
             "icoon": iconen[key],
             "key": key,
             "moskee": moskee,
+            "iqama": iqama,
             "berekend": berekend,
             "verschil": verschil,
             "status": status,
@@ -434,22 +471,38 @@ def api_tijden():
         config["latitude"], config["longitude"], vandaag, tz_str, methode
     )
 
-    # Vergelijk
-    vergelijking = vergelijk_tijden(moskee_tijden, berekend)
+    # Iqama info
+    iqama_data = {}
+    iqama_keys = ["fajr", "shurooq", "dhuhr", "asr", "maghrib", "isha"]
+    for i, key in enumerate(iqama_keys):
+        if i < len(iqama):
+            val = iqama[i]
+            # Mawaqit kan iqama als offset (int minuten) of als tijdstring geven
+            if isinstance(val, int) and val > 0:
+                # Offset in minuten na adhan
+                adhan_str = moskee_tijden.get(key, "")
+                if adhan_str:
+                    adhan_dt = datetime.strptime(adhan_str, "%H:%M")
+                    iqama_dt = adhan_dt + timedelta(minutes=val)
+                    iqama_data[key] = iqama_dt.strftime("%H:%M")
+                else:
+                    iqama_data[key] = f"+{val}m"
+            elif isinstance(val, str) and val:
+                iqama_data[key] = val
+
+    # Vergelijk (met iqama)
+    vergelijking = vergelijk_tijden(moskee_tijden, berekend, iqama_data)
 
     # Zonnestand
     zon = zonnestand_info(config["latitude"], config["longitude"], vandaag, tz_str, methode)
 
-    # Iqama info
-    iqama_data = {}
-    iqama_keys = ["fajr", "shurooq", "dhuhr", "asr", "maghrib"]
-    for i, key in enumerate(iqama_keys):
-        if i < len(iqama):
-            iqama_data[key] = iqama[i]
+    # Hijri datum
+    datum_hijri = gregorian_naar_hijri(vandaag.year, vandaag.month, vandaag.day)
 
     return jsonify({
         "moskee": config["moskee_naam"],
         "datum": vandaag.strftime("%A %d %B %Y"),
+        "datum_hijri": datum_hijri,
         "methode": methode,
         "vergelijking": vergelijking,
         "zonnestand": zon,
