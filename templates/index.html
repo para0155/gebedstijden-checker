@@ -382,6 +382,7 @@
             margin-top:6px;
         }
         .qibla-label{font-size:10px;color:var(--dim);margin-top:2px}
+        .qibla-hint{font-size:11px;color:var(--dim);margin-top:8px;font-style:italic}
 
         /* ═══════════════════════════════════════
            FEATURE 2: Vergelijking moskeeën
@@ -637,6 +638,7 @@
                 </div>
                 <div class="qibla-deg" id="qibla-deg"></div>
                 <div class="qibla-label">Richting naar Mekka (Kaaba)</div>
+                <div class="qibla-hint" id="qibla-hint"></div>
             </div>
 
             <!-- Vergelijking moskeeën (Feature 2) -->
@@ -1087,6 +1089,16 @@ async function laadTijden(){
         document.getElementById('qibla-deg').textContent=`${Math.round(deg)}\u00B0 ${data.qibla_richting||''}`;
         const needle=document.getElementById('compass-needle');
         needle.style.transform=`translate(-50%,-100%) rotate(${deg}deg)`;
+        // Op desktop: statische kompas met uitleg
+        const heeftSensor=!!window.DeviceOrientationEvent && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        const hint=document.getElementById('qibla-hint');
+        if(hint){
+            if(heeftSensor){
+                hint.textContent='Draai je telefoon om de naald te volgen';
+            } else {
+                hint.textContent=`Richt je ${Math.round(deg)}\u00B0 vanaf het noorden (${data.qibla_richting||''})`;
+            }
+        }
     }
 
     // Feature 5: Ramadan
