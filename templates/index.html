@@ -166,18 +166,25 @@
         .zs-item .zi{font-size:16px}.zs-item .zl{font-size:9px;color:var(--dim);margin-top:1px}
         .zs-item .zv{font-size:15px;font-weight:700;margin-top:1px}
 
-        /* ── Hoeken ── */
-        .h-row{
-            display:flex;align-items:center;gap:8px;
-            padding:9px 0;border-bottom:1px solid var(--border);
+        /* ── Overzicht gebed + zonnestand ── */
+        .oz-row{
+            display:flex;align-items:center;gap:10px;
+            padding:12px 0;border-bottom:1px solid var(--border);
         }
-        .h-row:last-child{border-bottom:none}
-        .h-row .hr-i{font-size:16px;flex-shrink:0}
-        .h-row .hr-info{flex:1;min-width:0}
-        .h-row .hr-n{font-size:12px;font-weight:600}
-        .h-row .hr-d{font-size:10px;color:var(--dim)}
-        .h-row .hr-v{font-size:15px;font-weight:700;flex-shrink:0;font-variant-numeric:tabular-nums}
-        .hr-v.pos{color:var(--gold)}.hr-v.neg{color:var(--accent)}.hr-v.nul{color:var(--orange)}
+        .oz-row:last-child{border-bottom:none}
+        .oz-row .oz-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center}
+        .oz-row .oz-info{flex:1;min-width:0}
+        .oz-row .oz-naam{font-size:14px;font-weight:700}
+        .oz-row .oz-zon{font-size:11px;color:var(--dim);margin-top:1px}
+        .oz-row .oz-right{flex-shrink:0;text-align:right}
+        .oz-row .oz-tijd{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+        .oz-row .oz-hoek{
+            font-size:10px;font-weight:600;margin-top:2px;
+            padding:1px 6px;border-radius:4px;display:inline-block;
+        }
+        .oz-hoek.pos{background:rgba(245,200,66,0.1);color:var(--gold)}
+        .oz-hoek.neg{background:rgba(74,158,255,0.1);color:var(--accent)}
+        .oz-hoek.nul{background:rgba(255,152,0,0.1);color:var(--orange)}
 
         /* ── Zonnestanden timeline ── */
         .tl-section{margin-top:14px}
@@ -293,10 +300,10 @@
             <div id="tl"></div>
         </div>
 
-        <!-- Hoeken (desktop: sidebar, mobile: na grafiek) -->
-        <div id="hc-sidebar" class="card" style="display:none">
-            <div class="card-label">Zonshoek per gebed</div>
-            <div id="hl-sidebar"></div>
+        <!-- Overzicht gebed + zonnestand (desktop: sidebar) -->
+        <div id="oz-sidebar" class="card" style="display:none">
+            <div class="card-label">Gebed & Zonnestand</div>
+            <div id="oz-sidebar-list"></div>
         </div>
     </div>
 
@@ -304,6 +311,12 @@
     <div class="main">
         <div id="ld" class="ld" style="display:none">
             <div class="sp"></div><div>Laden...</div>
+        </div>
+
+        <!-- Overzicht gebed + zonnestand (mobile: hier bovenaan) -->
+        <div id="oz-main" class="card" style="display:none">
+            <div class="card-label">Gebed & Zonnestand</div>
+            <div id="oz-main-list"></div>
         </div>
 
         <!-- Zon stats -->
@@ -317,12 +330,6 @@
         <div id="zst-card" class="card" style="display:none">
             <div class="card-label">Astronomische zonnestanden</div>
             <div id="zst-list"></div>
-        </div>
-
-        <!-- Hoeken (mobile: hier) -->
-        <div id="hc-main" class="card" style="display:none">
-            <div class="card-label">Zonshoek per gebed</div>
-            <div id="hl-main"></div>
         </div>
     </div>
 </div>
@@ -338,7 +345,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 function toonZoek(){
-    show('zoek');hide('mc','st','tc','zc','hc-sidebar','hc-main');
+    show('zoek');hide('mc','st','tc','zc','oz-sidebar','oz-main','zst-card');
     document.getElementById('si').focus();
 }
 function show(...ids){ids.forEach(id=>document.getElementById(id).style.display='')}
@@ -394,20 +401,34 @@ async function laadTijden(){
         {i:'🌇',l:'Ondergang',v:z.zonsondergang},{i:'🕐',l:'Daglicht',v:z.daglicht},
     ].map(s=>`<div class="zs-item"><div class="zi">${s.i}</div><div class="zl">${s.l}</div><div class="zv">${s.v}</div></div>`).join('');
 
-    // Hoeken
+    // Overzicht: gebed + zonnestand in 1 kaart
     const hoeken=z.gebedstijd_hoeken||[];
-    const hHTML=hoeken.map(h=>{
+    const vMap={};data.vergelijking.forEach(v=>{vMap[v.naam]={moskee:v.moskee,berekend:v.berekend}});
+
+    const ozHTML=hoeken.map(h=>{
         const cls=h.hoek===null?'nul':h.hoek>0?'pos':h.hoek<0?'neg':'nul';
         const val=h.hoek!==null?(h.hoek>0?'+':'')+h.hoek+'°':'—';
-        return `<div class="h-row"><span class="hr-i">${h.icoon}</span><div class="hr-info"><div class="hr-n">${h.naam}</div><div class="hr-d">${h.uitleg}</div></div><div class="hr-v ${cls}">${val}</div></div>`;
+        const tijden=vMap[h.naam]||{};
+        const tijd=tijden.berekend||h.tijd||'—';
+        return `<div class="oz-row">
+            <div class="oz-icon">${h.icoon}</div>
+            <div class="oz-info">
+                <div class="oz-naam">${h.naam}</div>
+                <div class="oz-zon">${h.uitleg}</div>
+            </div>
+            <div class="oz-right">
+                <div class="oz-tijd">${tijd}</div>
+                <div class="oz-hoek ${cls}">${val}</div>
+            </div>
+        </div>`;
     }).join('');
 
     if(isDesktop()){
-        show('hc-sidebar');hide('hc-main');
-        document.getElementById('hl-sidebar').innerHTML=hHTML;
+        show('oz-sidebar');hide('oz-main');
+        document.getElementById('oz-sidebar-list').innerHTML=ozHTML;
     } else {
-        show('hc-main');hide('hc-sidebar');
-        document.getElementById('hl-main').innerHTML=hHTML;
+        show('oz-main');hide('oz-sidebar');
+        document.getElementById('oz-main-list').innerHTML=ozHTML;
     }
 
     // Zonnestanden
@@ -446,9 +467,8 @@ async function laadTijden(){
     const draw=()=>tekenGrafiek(z.zonnepad,hoeken,data.vergelijking);
     setTimeout(draw,80);
     _rh=()=>{
-        // Switch hoeken positie bij resize
-        if(isDesktop()){show('hc-sidebar');hide('hc-main');document.getElementById('hl-sidebar').innerHTML=hHTML}
-        else{show('hc-main');hide('hc-sidebar');document.getElementById('hl-main').innerHTML=hHTML}
+        if(isDesktop()){show('oz-sidebar');hide('oz-main');document.getElementById('oz-sidebar-list').innerHTML=ozHTML}
+        else{show('oz-main');hide('oz-sidebar');document.getElementById('oz-main-list').innerHTML=ozHTML}
         draw();
     };
     window.addEventListener('resize',_rh);
