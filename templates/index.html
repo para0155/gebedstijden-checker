@@ -25,18 +25,56 @@
             --chart-bg: #080c16;
         }
         [data-theme="light"]{
-            --bg: #f0f2f5;
-            --surface: #ffffff;
-            --surface2: #e8ecf0;
-            --border: rgba(0,0,0,0.08);
-            --text: #1a1a2e;
-            --dim: #6b7b94;
-            --accent: #2563eb;
-            --gold: #d97706;
-            --green: #059669;
-            --orange: #ea580c;
-            --red: #dc2626;
-            --chart-bg: #e8ecf0;
+            --bg: #f5f0e8;
+            --surface: #fffdf7;
+            --surface2: #efe9dd;
+            --border: rgba(120,90,50,0.1);
+            --text: #2c2416;
+            --dim: #8a7d6b;
+            --accent: #1a6fb5;
+            --gold: #b8860b;
+            --green: #1a7a4c;
+            --orange: #c85a17;
+            --red: #b83232;
+            --chart-bg: #e8e0d0;
+        }
+        [data-theme="light"] body{
+            background:linear-gradient(180deg,#f5f0e8 0%,#ede5d8 100%);
+        }
+        [data-theme="light"] .card{
+            box-shadow:0 1px 4px rgba(100,80,50,0.08);
+        }
+        [data-theme="light"] .sidebar{
+            background:#fffdf7;
+            border-right-color:rgba(120,90,50,0.1);
+        }
+        [data-theme="light"] .pill.ok{
+            background:rgba(26,122,76,0.08);color:#1a7a4c;
+            border-color:rgba(26,122,76,0.18);
+        }
+        [data-theme="light"] .pill.warn{
+            background:rgba(200,90,23,0.08);color:#c85a17;
+            border-color:rgba(200,90,23,0.18);
+        }
+        [data-theme="light"] .g-badge.ok{background:rgba(26,122,76,0.1);color:#1a7a4c}
+        [data-theme="light"] .g-badge.warning{background:rgba(200,90,23,0.1);color:#c85a17}
+        [data-theme="light"] .g-badge.error{background:rgba(184,50,50,0.1);color:#b83232}
+        [data-theme="light"] .ramadan-card{
+            background:linear-gradient(135deg,rgba(26,122,76,0.06),rgba(184,134,11,0.08));
+            border-color:rgba(184,134,11,0.2);
+        }
+        [data-theme="light"] .search-row input{
+            background:#fffdf7;color:#2c2416;border-color:rgba(120,90,50,0.15);
+        }
+        [data-theme="light"] .res-item{background:#fffdf7}
+        [data-theme="light"] .fav-item{background:#fffdf7}
+        [data-theme="light"] .zs-item{background:#fffdf7}
+        [data-theme="light"] .compass-ring{
+            background:radial-gradient(circle,#fffdf7 0%,#efe9dd 100%);
+            border-color:rgba(120,90,50,0.15);
+        }
+        [data-theme="light"] .theme-toggle{
+            background:#fffdf7;box-shadow:0 2px 8px rgba(100,80,50,0.12);
         }
         *{margin:0;padding:0;box-sizing:border-box}
         body{
@@ -1497,7 +1535,11 @@ function tekenGrafiek(pad,gebeden,verg){
     const yP=h=>mT+(1-(h-bot)/rng)*gH;
 
     // Zones
-    [[bot,-18,'#060a14'],[-18,-12,'#0b1225'],[-12,-6,'#111c3a'],[-6,0,'#182952'],[0,top,'#14203c']].forEach(([a,b,col])=>{
+    const isLight=document.documentElement.getAttribute('data-theme')==='light';
+    const zones=isLight?
+        [[bot,-18,'#c8bfb0'],[-18,-12,'#d4ccbc'],[-12,-6,'#ddd5c5'],[-6,0,'#e8e0d0'],[0,top,'#f0e8d8']]:
+        [[bot,-18,'#060a14'],[-18,-12,'#0b1225'],[-12,-6,'#111c3a'],[-6,0,'#182952'],[0,top,'#14203c']];
+    zones.forEach(([a,b,col])=>{
         c.fillStyle=col;c.fillRect(mL,yP(b),gW,yP(a)-yP(b));
     });
 
@@ -1509,9 +1551,10 @@ function tekenGrafiek(pad,gebeden,verg){
     });
 
     // Y-as
+    const axisColor=isLight?'#8a7d6b':'#2d3f5c';
     c.font=`${mob?9:9}px system-ui`;c.textAlign='right';
     for(let h=Math.ceil(bot/10)*10;h<=top;h+=10){
-        c.fillStyle='#2d3f5c';
+        c.fillStyle=axisColor;
         c.fillText(h+'\u00B0',mL-5,yP(h)+3);
     }
 
@@ -1529,8 +1572,10 @@ function tekenGrafiek(pad,gebeden,verg){
         const p={x:xP(i-1),y:yP(pad[i-1].hoogte)},n={x:xP(i),y:yP(pad[i].hoogte)},mx=(p.x+n.x)/2;
         c.bezierCurveTo(mx,p.y,mx,n.y,n.x,n.y);
     }
-    c.save();c.shadowColor='rgba(245,200,66,.3)';c.shadowBlur=10;c.strokeStyle='#f5c842';c.lineWidth=mob?2:2.5;c.stroke();c.restore();
-    c.strokeStyle='#ffd54f';c.lineWidth=mob?1.8:2;c.stroke();
+    const curveColor=isLight?'#b8860b':'#f5c842';
+    const curveGlow=isLight?'rgba(184,134,11,.2)':'rgba(245,200,66,.3)';
+    c.save();c.shadowColor=curveGlow;c.shadowBlur=10;c.strokeStyle=curveColor;c.lineWidth=mob?2:2.5;c.stroke();c.restore();
+    c.strokeStyle=isLight?'#c99a0e':'#ffd54f';c.lineWidth=mob?1.8:2;c.stroke();
 
     // Markers
     const gk={
@@ -1611,7 +1656,7 @@ function tekenGrafiek(pad,gebeden,verg){
     }
 
     // X-as uurlabels
-    c.fillStyle='#2d3f5c';c.font=`${mob?7:8}px system-ui`;c.textAlign='center';
+    c.fillStyle=axisColor;c.font=`${mob?7:8}px system-ui`;c.textAlign='center';
     const step=mob?6:3;
     for(let h=0;h<=24;h+=step){
         const idx=Math.round((h*60)/10);if(idx>=pad.length)continue;
