@@ -485,10 +485,19 @@ def api_tijden():
                     adhan_dt = datetime.strptime(adhan_str, "%H:%M")
                     iqama_dt = adhan_dt + timedelta(minutes=val)
                     iqama_data[key] = iqama_dt.strftime("%H:%M")
-                else:
-                    iqama_data[key] = f"+{val}m"
             elif isinstance(val, str) and val:
-                iqama_data[key] = val
+                # String offset zoals "+10" → bereken echte tijd
+                stripped = val.strip().lstrip("+")
+                if stripped.isdigit():
+                    offset_min = int(stripped)
+                    adhan_str = moskee_tijden.get(key, "")
+                    if adhan_str:
+                        adhan_dt = datetime.strptime(adhan_str, "%H:%M")
+                        iqama_dt = adhan_dt + timedelta(minutes=offset_min)
+                        iqama_data[key] = iqama_dt.strftime("%H:%M")
+                elif ":" in val:
+                    # Al een echte tijd zoals "13:02"
+                    iqama_data[key] = val
 
     # Vergelijk (met iqama)
     vergelijking = vergelijk_tijden(moskee_tijden, berekend, iqama_data)
