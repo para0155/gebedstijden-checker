@@ -116,10 +116,10 @@
         }
 
         /* ── Moskee info ── */
-        .moskee-top{display:flex;justify-content:space-between;align-items:flex-start}
+        .moskee-top{display:flex;flex-direction:column;gap:10px}
         .moskee-top h2{font-size:17px;font-weight:700;color:var(--accent)}
         .moskee-top .meta{color:var(--dim);font-size:11px;margin-top:2px}
-        .moskee-btns{display:flex;gap:6px;flex-shrink:0;margin-left:10px}
+        .moskee-btns{display:flex;gap:6px;flex-wrap:wrap}
         .btn-sm{
             background:none;border:1px solid rgba(74,158,255,0.2);color:var(--accent);
             padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;
@@ -631,10 +631,8 @@
         <!-- Moskee -->
         <div id="mc" class="card" style="display:none">
             <div class="moskee-top">
-                <div>
-                    <h2 id="mn"></h2>
-                    <div class="meta" id="md"></div>
-                </div>
+                <h2 id="mn"></h2>
+                <div class="meta" id="md"></div>
                 <div class="moskee-btns">
                     <button class="btn-sm" onclick="startVergelijk()">Vergelijk</button>
                     <button class="btn-sm" onclick="toonZoek()">Wijzig</button>
